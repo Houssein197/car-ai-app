@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import * as formidable from "formidable";
 import fs from "fs";
+import path from "path";
 import Replicate from "replicate";
 import fetch from "node-fetch";
-import path from "path";
 
 export const config = {
   api: {
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   form.keepExtensions = true;
 
   form.parse(req, async (err, fields, files) => {
-    let filePath = null;
+    let newFilePath = null;
     try {
       if (err) {
         console.error("Form parse error:", err);
@@ -42,15 +42,23 @@ export default async function handler(req, res) {
       }
 
       const file = files.file[0];
-      filePath = file.filepath;
-
-      // Build public URL to local file (for local dev only)
+      const filePath = file.filepath;
       const fileName = path.basename(filePath);
+
+      // Move file to /public/uploads so it's publicly accessible
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      newFilePath = path.join(uploadsDir, fileName);
+      fs.renameSync(filePath, newFilePath);
+
+      // Build public URL for Replicate
       const publicUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/uploads/${fileName}`;
+      console.log("📤 Public URL for Replicate:", publicUrl);
 
-      console.log("📤 Using public URL:", publicUrl);
-
-      // Call Replicate with public URL
+      // Call Replicate
       const output = await replicate.run("black-forest-labs/flux-kontext-pro", {
         input: {
           image: publicUrl,
@@ -77,7 +85,7 @@ export default async function handler(req, res) {
       }
 
       if (!finalImageUrl) {
-        throw new Error("No final image URL found from Replicate");
+        throw new Error("No final image URL returned from Replicate");
       }
 
       // Download final image
@@ -110,7 +118,6 @@ export default async function handler(req, res) {
       const finalPublicUrl = publicUrlData.publicUrl;
       console.log("✅ Uploaded to Supabase, public URL:", finalPublicUrl);
 
-      // Always respond with JSON
       return res.status(200).json({
         imageUrl: finalPublicUrl,
         success: true,
@@ -120,11 +127,11 @@ export default async function handler(req, res) {
       console.error("🔥 API error:", error);
       return res.status(500).json({ error: error.message || "Unknown error" });
     } finally {
-      // Clean up
+      // Clean up local file
       try {
-        if (filePath && fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-          console.log("🧹 Cleaned up temporary file");
+        if (newFilePath && fs.existsSync(newFilePath)) {
+          fs.unlinkSync(newFilePath);
+          console.log("🧹 Cleaned up uploaded file");
         }
       } catch (cleanupError) {
         console.error("Failed to cleanup file:", cleanupError);
