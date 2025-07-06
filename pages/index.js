@@ -50,23 +50,21 @@ export default function Home() {
         method: "POST",
         body: formData,
       });
-
-      const data = await res.json();
-      console.log("📡 API Response:", data);
-
+      
       if (!res.ok) {
-        const errorMessage = data.error || data.details || `HTTP ${res.status}: ${res.statusText}`;
-        const fullError = data.fullError || data.details || errorMessage;
-        console.error("❌ API Error Details:", { error: data.error, details: data.details, fullError: data.fullError });
-        throw new Error(errorMessage);
+        const text = await res.text();
+        throw new Error(`Server error: ${text}`);
       }
-
+      
+      const data = await res.json();
+      
       if (data.imageUrl) {
         setImageUrl(data.imageUrl);
         console.log("✅ Image processed and uploaded successfully:", data.imageUrl);
       } else {
         throw new Error("No image URL returned from server.");
       }
+      
     } catch (error) {
       console.error("❌ Processing error:", error);
       setError(error.message || "Error processing image. Please try again.");
