@@ -95,13 +95,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const form = formidable.default();
-  form.uploadDir = "./";
-  form.keepExtensions = true;
+  // Fix: Pass options in constructor for formidable v3+
+  const form = formidable.default({
+    uploadDir: "./",
+    keepExtensions: true,
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    multiples: false
+  });
 
   form.parse(req, async (err, fields, files) => {
     let newFilePath = null;
-    let finalImageUrl = null;
+    
     
     try {
       if (err) {
@@ -144,7 +148,9 @@ export default async function handler(req, res) {
 
       console.log("🤖 Calling Replicate (Flux Kontext Pro)...");
 
-      const output = await replicate.run("black-forest-labs/flux-kontext-pro", {
+      // Create prediction directly (more reliable for image editing models)
+      const prediction = await replicate.predictions.create({
+        version: "0f1178f5a27e9aa2d2d39c8a43c110f7fa7cbf64062ff04a04cd40899e546065", // or your specific version if needed
         input: {
           image: publicUrl,
           prompt: "Change the background to a luxury white showroom with glossy floor and bright lighting. Keep the original car exactly the same without any changes to color, shape, details, or reflections. Do not alter the car at all. Only change the background.",
@@ -156,19 +162,31 @@ export default async function handler(req, res) {
         },
       });
 
-      console.log("🔍 Replicate raw output:", output);
+      console.log("🟢 Prediction status:", prediction.status);
 
-      // Properly extract final URL
+      // Wait for the prediction to finish
+      while (prediction.status !== "succeeded" && prediction.status !== "failed") {
+        console.log("⏳ Waiting for prediction to finish...");
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        const refreshed = await replicate.predictions.get(prediction.id);
+        prediction.status = refreshed.status;
+        prediction.output = refreshed.output;
+        if (prediction.status === "failed") {
+          throw new Error(`Replicate prediction failed: ${refreshed.error}`);
+        }
+      }
+
+      console.log("✅ Prediction succeeded");
+      console.log("🔍 Prediction output:", prediction.output);
+
       let finalImageUrl = "";
 
-      if (Array.isArray(output) && output.length > 0 && typeof output[0] === "string") {
-        finalImageUrl = output[0];
-      } else if (typeof output === "string") {
-        finalImageUrl = output;
-      } else if (output && typeof output.output === "string") {
-        finalImageUrl = output.output;
+      if (Array.isArray(prediction.output) && prediction.output.length > 0 && typeof prediction.output[0] === "string") {
+        finalImageUrl = prediction.output[0];
+      } else if (typeof prediction.output === "string") {
+        finalImageUrl = prediction.output;
       } else {
-        throw new Error("Invalid URL: URL is not a string or is empty");
+      throw new Error("Invalid URL: Replicate output did not return a valid URL");
       }
 
       if (!finalImageUrl) {
@@ -176,6 +194,7 @@ export default async function handler(req, res) {
       }
 
       console.log("🎨 Final processed image URL:", finalImageUrl);
+
 
       // --------------------- END NEW SNIPPET ---------------------
 
