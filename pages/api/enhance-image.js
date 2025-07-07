@@ -135,7 +135,7 @@ export default async function handler(req, res) {
         : path.join(process.cwd(), "public", "uploads");
 
       if (!fs.existsSync(uploadsDir)) {
-        s.mkdirSync(uploadsDir, { recursive: true });
+        fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
 
