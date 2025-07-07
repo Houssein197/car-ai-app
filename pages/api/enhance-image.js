@@ -253,7 +253,7 @@ export default async function handler(req, res) {
 
       const finalPublicUrl = publicUrlData.publicUrl;
       console.log("✅ Uploaded to Supabase, public URL:", finalPublicUrl);
-
+      await waitForUrlAccess(finalPublicUrl, 5, 2000);
       return res.status(200).json({
         imageUrl: finalPublicUrl,
         success: true,
