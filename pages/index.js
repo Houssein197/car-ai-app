@@ -366,7 +366,7 @@ export default function Home() {
         color: "#6b7280",
         fontSize: "0.9rem"
       }}>
-        <p>Powered by Flux Kontext Pro AI • Stored in Supabase</p>
+        <p>Powered by Abdulhakim Houssein</p>
       </div>
     </main>
   );
