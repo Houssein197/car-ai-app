@@ -128,10 +128,16 @@ export default async function handler(req, res) {
       const fileName = generateUniqueFileName(originalName);
 
       // Move file to /public/uploads so it's publicly accessible
-      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      // ✅ Use /tmp on Vercel, public/uploads locally
+      const isVercel = process.env.VERCEL === "1";
+      const uploadsDir = isVercel
+        ? path.join("/tmp", "uploads")
+        : path.join(process.cwd(), "public", "uploads");
+
       if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
+        s.mkdirSync(uploadsDir, { recursive: true });
       }
+
 
       newFilePath = path.join(uploadsDir, fileName);
       fs.renameSync(filePath, newFilePath);
