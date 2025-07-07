@@ -73,24 +73,33 @@ export default function Home() {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!imageUrl) return;
-    
+  
     try {
       console.log("📥 Downloading image:", imageUrl);
+  
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+  
       const link = document.createElement("a");
-      link.href = imageUrl;
+      link.href = url;
       link.download = `luxury_showroom_car_${Date.now()}.png`;
-      link.target = "_blank";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+  
+      // Revoke URL to free memory
+      URL.revokeObjectURL(url);
+  
       console.log("✅ Download initiated");
     } catch (error) {
       console.error("❌ Download error:", error);
       setError("Failed to download image. Please try again.");
     }
   };
+  
     
   const handleShare = async () => {
     if (!imageUrl) return;
