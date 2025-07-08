@@ -2,8 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import * as formidable from "formidable";
 import fs from "fs";
 import path from "path";
-import fetch from "node-fetch";
 import sharp from "sharp";
+import fetch from "node-fetch";
 
 export const config = {
   api: {
@@ -16,18 +16,20 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Helper: generate unique filename
 function generateUniqueFileName(originalName) {
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(2, 15);
-  const extension = path.extname(originalName) || ".png";
+  const extension = path.extname(originalName) || ".jpg";
   return `car-${timestamp}-${randomId}${extension}`;
 }
 
+// Helper: validate file
 function validateFile(file) {
   const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
   const maxSize = 10 * 1024 * 1024; // 10MB
   if (!allowedTypes.includes(file.mimetype)) {
-    throw new Error("Invalid file type. Only JPG and PNG files are allowed.");
+    throw new Error("Invalid file type. Only JPG and PNG allowed.");
   }
   if (file.size > maxSize) {
     throw new Error("File size must be less than 10MB.");
@@ -54,7 +56,6 @@ export default async function handler(req, res) {
         console.error("Form parse error:", err);
         return res.status(500).json({ error: "Form parse error" });
       }
-
       if (!files.file || !files.file[0]) {
         return res.status(400).json({ error: "No file uploaded" });
       }
@@ -62,69 +63,68 @@ export default async function handler(req, res) {
       const file = files.file[0];
       validateFile(file);
 
+      const filePath = file.filepath;
       const originalName = file.originalFilename || "uploaded-image";
       const fileName = generateUniqueFileName(originalName);
-      const uploadsDir = "/tmp/uploads";
 
+      // Local or Vercel
+      const isVercel = process.env.VERCEL === "1";
+      const uploadsDir = isVercel ? path.join("/tmp", "uploads") : path.join(process.cwd(), "public", "uploads");
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
       newFilePath = path.join(uploadsDir, fileName);
-      fs.renameSync(file.filepath, newFilePath);
-      console.log("✅ File moved to:", newFilePath);
+      fs.renameSync(filePath, newFilePath);
 
-      // Upload to Supabase first to get public URL
-      const supaTempFileName = `original-car-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2, 15)}${path.extname(fileName)}`;
-      const { error: tempUploadError } = await supabase.storage
+      // Upload to Supabase first
+      const supaTempFileName = `original-car-${Date.now()}-${Math.random().toString(36).substring(2, 15)}${path.extname(fileName)}`;
+      const { data: tempUploadData, error: tempUploadError } = await supabase.storage
         .from("car-images")
         .upload(supaTempFileName, fs.readFileSync(newFilePath), {
           contentType: file.mimetype,
           upsert: false,
         });
-
       if (tempUploadError) {
         throw new Error(`Supabase upload error: ${tempUploadError.message}`);
       }
-
       const { data: tempPublicUrlData } = supabase
         .storage
         .from("car-images")
         .getPublicUrl(supaTempFileName);
-
       const carUrl = tempPublicUrlData.publicUrl;
-      console.log("✅ Uploaded to Supabase, public URL for remove.bg:", carUrl);
 
-      // Call remove.bg API
+      // 🔥 Remove background with remove.bg
+      if (!process.env.REMOVEBG_API_KEY) {
+        throw new Error("Missing remove.bg API key!");
+      }
       console.log("🤖 Removing background with remove.bg...");
       const removeBgRes = await fetch("https://api.remove.bg/v1.0/removebg", {
         method: "POST",
         headers: {
-          "X-Api-Key": process.env.REMOVE_BG_API_KEY,
+          "X-Api-Key": process.env.REMOVEBG_API_KEY,
         },
         body: new URLSearchParams({
           image_url: carUrl,
           size: "auto",
         }),
       });
-
       if (!removeBgRes.ok) {
         const errorText = await removeBgRes.text();
         throw new Error(`remove.bg error: ${errorText}`);
       }
-
       const bgRemovedBuffer = await removeBgRes.buffer();
-      console.log("✅ Background removed");
+      console.log("✅ Background removed.");
 
-      // Create new minimalistic background
-      const width = 1920;
-      const height = 1080;
-      const wallHeight = Math.floor(height * 0.65); // top part
+      // Get original image dimensions
+      const originalMeta = await sharp(fs.readFileSync(newFilePath)).metadata();
+      const { width, height } = originalMeta;
+
+      // Create minimalistic showroom background
+      const wallHeight = Math.floor(height * 0.6);
       const floorHeight = height - wallHeight;
 
-      // Wall (top) layer
+      // Wall (top): #F5F5F5
       const wall = {
         create: {
           width,
@@ -133,8 +133,7 @@ export default async function handler(req, res) {
           background: "#F5F5F5",
         },
       };
-
-      // Floor (bottom) layer
+      // Floor (bottom): #1F1F1F
       const floor = {
         create: {
           width,
@@ -144,77 +143,56 @@ export default async function handler(req, res) {
         },
       };
 
-      // Merge wall and floor
-      const wallBuffer = await sharp(wall).toBuffer();
-      const floorBuffer = await sharp(floor).toBuffer();
+      const wallBuffer = await sharp(wall).png().toBuffer();
+      const floorBuffer = await sharp(floor).png().toBuffer();
 
-      const background = await sharp({
+      // Combine wall and floor vertically
+      const showroomBuffer = await sharp({
         create: {
           width,
           height,
           channels: 3,
-          background: "#FFFFFF", // temp background
+          background: "#ffffff",
         },
       })
         .composite([
           { input: wallBuffer, top: 0, left: 0 },
           { input: floorBuffer, top: wallHeight, left: 0 },
         ])
-        .toBuffer();
-
-      // Optional shadow under car
-      const shadow = await sharp({
-        create: {
-          width: 800,
-          height: 200,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0.3 },
-        },
-      })
-        .blur(50)
-        .toBuffer();
-
-      // Compose final image
-      const finalImage = await sharp(background)
-        .composite([
-          { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
-          { input: bgRemovedBuffer, top: 0, left: 0 },
-        ])
         .png()
         .toBuffer();
 
-      // Upload final image to Supabase
-      const finalFileName = `luxury-showroom-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2, 15)}.png`;
+      // Composite car PNG onto showroom
+      const finalBuffer = await sharp(showroomBuffer)
+        .composite([{ input: bgRemovedBuffer, top: 0, left: 0 }])
+        .png()
+        .toBuffer();
 
-      const { error: finalUploadError } = await supabase.storage
+      // Upload final to Supabase
+      const finalFileName = `luxury-showroom-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.png`;
+      const { data: finalUploadData, error: finalUploadError } = await supabase.storage
         .from("car-images")
-        .upload(finalFileName, finalImage, {
+        .upload(finalFileName, finalBuffer, {
           contentType: "image/png",
           upsert: false,
         });
-
       if (finalUploadError) {
-        throw new Error(`Supabase final upload error: ${finalUploadError.message}`);
+        throw new Error(`Supabase upload error: ${finalUploadError.message}`);
       }
-
       const { data: finalPublicUrlData } = supabase
         .storage
         .from("car-images")
         .getPublicUrl(finalFileName);
-
       const finalPublicUrl = finalPublicUrlData.publicUrl;
-      console.log("✅ Final image uploaded, public URL:", finalPublicUrl);
 
-      res.status(200).json({
+      return res.status(200).json({
         imageUrl: finalPublicUrl,
         success: true,
-        message: "Image processed and uploaded successfully",
+        message: "Image processed and composited successfully",
       });
     } catch (error) {
       console.error("🔥 API error:", error);
-      res.status(500).json({ error: error.message || "Unknown error" });
+      return res.status(500).json({ error: error.message || "Unknown error" });
     } finally {
       try {
         if (newFilePath && fs.existsSync(newFilePath)) {
@@ -222,7 +200,7 @@ export default async function handler(req, res) {
           console.log("🧹 Cleaned up local file");
         }
       } catch (cleanupError) {
-        console.error("Failed to cleanup file:", cleanupError);
+        console.error("Cleanup error:", cleanupError);
       }
     }
   });
