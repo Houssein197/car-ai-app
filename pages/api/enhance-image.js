@@ -2,8 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import * as formidable from "formidable";
 import fs from "fs";
 import path from "path";
-import Replicate from "replicate";
 import fetch from "node-fetch";
+import sharp from "sharp";
 
 export const config = {
   api: {
@@ -11,32 +11,24 @@ export const config = {
   },
 };
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
-
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Helper function to generate unique filename
 function generateUniqueFileName(originalName) {
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(2, 15);
-  const extension = path.extname(originalName) || ".jpg";
+  const extension = path.extname(originalName) || ".png";
   return `car-${timestamp}-${randomId}${extension}`;
 }
 
-// Helper function to validate file
 function validateFile(file) {
   const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
   const maxSize = 10 * 1024 * 1024; // 10MB
-
   if (!allowedTypes.includes(file.mimetype)) {
     throw new Error("Invalid file type. Only JPG and PNG files are allowed.");
   }
-
   if (file.size > maxSize) {
     throw new Error("File size must be less than 10MB.");
   }
@@ -68,36 +60,25 @@ export default async function handler(req, res) {
       }
 
       const file = files.file[0];
-      console.log("📁 Processing file:", file.originalFilename);
-
-      // Validate file
       validateFile(file);
 
-      const filePath = file.filepath;
       const originalName = file.originalFilename || "uploaded-image";
       const fileName = generateUniqueFileName(originalName);
-
-      // Use /tmp for Vercel, public/uploads locally
-      const isVercel = process.env.VERCEL === "1";
-      const uploadsDir = isVercel
-        ? path.join("/tmp", "uploads")
-        : path.join(process.cwd(), "public", "uploads");
+      const uploadsDir = "/tmp/uploads";
 
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
       newFilePath = path.join(uploadsDir, fileName);
-      fs.renameSync(filePath, newFilePath);
-      console.log("✅ File moved to uploads directory:", fileName);
+      fs.renameSync(file.filepath, newFilePath);
+      console.log("✅ File moved to:", newFilePath);
 
-      // ✅ Upload original to Supabase first
+      // Upload to Supabase first to get public URL
       const supaTempFileName = `original-car-${Date.now()}-${Math.random()
         .toString(36)
         .substring(2, 15)}${path.extname(fileName)}`;
-      console.log("☁️ Uploading original file to Supabase first:", supaTempFileName);
-
-      const { data: tempUploadData, error: tempUploadError } = await supabase.storage
+      const { error: tempUploadError } = await supabase.storage
         .from("car-images")
         .upload(supaTempFileName, fs.readFileSync(newFilePath), {
           contentType: file.mimetype,
@@ -113,67 +94,132 @@ export default async function handler(req, res) {
         .from("car-images")
         .getPublicUrl(supaTempFileName);
 
-      const supaPublicUrl = tempPublicUrlData.publicUrl;
-      console.log("✅ Uploaded to Supabase, public URL for Replicate:", supaPublicUrl);
+      const carUrl = tempPublicUrlData.publicUrl;
+      console.log("✅ Uploaded to Supabase, public URL for remove.bg:", carUrl);
 
-      // 🔥 Call Replicate with public Supabase URL
-      console.log("🤖 Removing background with Replicate...");
-
-      const prediction = await replicate.predictions.create({
-        version: "fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003", // rembg
-        input: {
-          image: supaPublicUrl,
+      // Call remove.bg API
+      console.log("🤖 Removing background with remove.bg...");
+      const removeBgRes = await fetch("https://api.remove.bg/v1.0/removebg", {
+        method: "POST",
+        headers: {
+          "X-Api-Key": process.env.REMOVE_BG_API_KEY,
         },
+        body: new URLSearchParams({
+          image_url: carUrl,
+          size: "auto",
+        }),
       });
 
-      console.log("🟢 Prediction status:", prediction.status);
-
-      // Wait for prediction to finish
-      while (prediction.status !== "succeeded" && prediction.status !== "failed") {
-        console.log("⏳ Waiting for prediction to finish...");
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        const refreshed = await replicate.predictions.get(prediction.id);
-        prediction.status = refreshed.status;
-        prediction.output = refreshed.output;
-
-        if (prediction.status === "failed") {
-          throw new Error(`Replicate prediction failed: ${refreshed.error}`);
-        }
+      if (!removeBgRes.ok) {
+        const errorText = await removeBgRes.text();
+        throw new Error(`remove.bg error: ${errorText}`);
       }
 
-      console.log("✅ Prediction succeeded");
-      console.log("🔍 Prediction output:", prediction.output);
+      const bgRemovedBuffer = await removeBgRes.buffer();
+      console.log("✅ Background removed");
 
-      let finalImageUrl = "";
+      // Create new minimalistic background
+      const width = 1920;
+      const height = 1080;
+      const wallHeight = Math.floor(height * 0.65); // top part
+      const floorHeight = height - wallHeight;
 
-      if (Array.isArray(prediction.output) && prediction.output.length > 0 && typeof prediction.output[0] === "string") {
-        finalImageUrl = prediction.output[0];
-      } else if (typeof prediction.output === "string") {
-        finalImageUrl = prediction.output;
-      } else {
-        throw new Error("Invalid URL: Replicate output did not return a valid URL");
+      // Wall (top) layer
+      const wall = {
+        create: {
+          width,
+          height: wallHeight,
+          channels: 3,
+          background: "#F5F5F5",
+        },
+      };
+
+      // Floor (bottom) layer
+      const floor = {
+        create: {
+          width,
+          height: floorHeight,
+          channels: 3,
+          background: "#1F1F1F",
+        },
+      };
+
+      // Merge wall and floor
+      const wallBuffer = await sharp(wall).toBuffer();
+      const floorBuffer = await sharp(floor).toBuffer();
+
+      const background = await sharp({
+        create: {
+          width,
+          height,
+          channels: 3,
+          background: "#FFFFFF", // temp background
+        },
+      })
+        .composite([
+          { input: wallBuffer, top: 0, left: 0 },
+          { input: floorBuffer, top: wallHeight, left: 0 },
+        ])
+        .toBuffer();
+
+      // Optional shadow under car
+      const shadow = await sharp({
+        create: {
+          width: 800,
+          height: 200,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0.3 },
+        },
+      })
+        .blur(50)
+        .toBuffer();
+
+      // Compose final image
+      const finalImage = await sharp(background)
+        .composite([
+          { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
+          { input: bgRemovedBuffer, top: 0, left: 0 },
+        ])
+        .png()
+        .toBuffer();
+
+      // Upload final image to Supabase
+      const finalFileName = `luxury-showroom-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 15)}.png`;
+
+      const { error: finalUploadError } = await supabase.storage
+        .from("car-images")
+        .upload(finalFileName, finalImage, {
+          contentType: "image/png",
+          upsert: false,
+        });
+
+      if (finalUploadError) {
+        throw new Error(`Supabase final upload error: ${finalUploadError.message}`);
       }
 
-      if (!finalImageUrl) {
-        throw new Error("Invalid URL: URL is not a string or is empty");
-      }
+      const { data: finalPublicUrlData } = supabase
+        .storage
+        .from("car-images")
+        .getPublicUrl(finalFileName);
 
-      console.log("🎨 Final processed image URL:", finalImageUrl);
+      const finalPublicUrl = finalPublicUrlData.publicUrl;
+      console.log("✅ Final image uploaded, public URL:", finalPublicUrl);
 
-      return res.status(200).json({
-        imageUrl: finalImageUrl,
+      res.status(200).json({
+        imageUrl: finalPublicUrl,
         success: true,
-        message: "Image processed and background removed successfully",
+        message: "Image processed and uploaded successfully",
       });
     } catch (error) {
       console.error("🔥 API error:", error);
-      return res.status(500).json({ error: error.message || "Unknown error" });
+      res.status(500).json({ error: error.message || "Unknown error" });
     } finally {
-      // Clean up local file AFTER processing is complete
       try {
         if (newFilePath && fs.existsSync(newFilePath)) {
           fs.unlinkSync(newFilePath);
-          console.log("🧹 Cleaned up uploaded file");
+          console.log("🧹 Cleaned up local file");
         }
       } catch (cleanupError) {
         console.error("Failed to cleanup file:", cleanupError);
