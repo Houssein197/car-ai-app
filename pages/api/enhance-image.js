@@ -4,7 +4,6 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 import fetch from "node-fetch";
-import sharp from "sharp";
 
 export const config = {
   api: { bodyParser: false },

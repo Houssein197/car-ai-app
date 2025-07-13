@@ -45,7 +45,7 @@ export default function DashboardPage() {
         setLogoUrl(l || "");
       }
     });
-  }, []);
+  }, [router]);
 
   // When results change, reset currentIndex to last image
   useEffect(() => {

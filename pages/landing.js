@@ -252,7 +252,7 @@ export default function Home() {
                 <Typography fontSize={48} mb={1}>🏎️</Typography>
                 <Typography fontSize={18} fontWeight={500}>Your luxury showroom image will appear here</Typography>
                 <Typography fontSize={14} mt={1} color="text.secondary">
-                  Upload a car photo and click "Create Luxury Showroom Image"
+                  Upload a car photo and click &quot;Create Luxury Showroom Image&quot;
                 </Typography>
               </Box>
             )}
