@@ -18,7 +18,6 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [dealership, setDealership] = useState("");
-  const [logoFile, setLogoFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [dealershipError, setDealershipError] = useState(false);
@@ -36,24 +35,6 @@ export default function AuthPage() {
       return;
     }
     try {
-      let logoUrl = null;
-      if (tab === 1 && logoFile && plan !== "one-time") {
-        // Upload logo to Supabase Storage 'logos' bucket
-        const ext = logoFile.name.split('.').pop();
-        const logoFileName = `logo-${email.replace(/[^a-zA-Z0-9]/g, '_')}.${ext}`;
-        const { data, error } = await supabase.storage
-          .from("logos")
-          .upload(logoFileName, logoFile, {
-            cacheControl: '3600',
-            upsert: true,
-            contentType: logoFile.type
-          });
-        if (error) throw error;
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage.from("logos").getPublicUrl(logoFileName);
-        logoUrl = publicUrlData.publicUrl;
-        if (logoUrl) localStorage.setItem("logoUrl", logoUrl);
-      }
       if (tab === 1) {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
@@ -180,43 +161,6 @@ export default function AuthPage() {
                 },
               }}
             />
-            {/* Only show logo upload for subscription plans and sign up */}
-            {tab === 1 && plan !== "one-time" && (
-              <Box mt={2}>
-                <Typography variant="body2" color="text.secondary" mb={1}>
-                  Upload logo (optional)
-                </Typography>
-                <Button
-                  component="label"
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    borderColor: "#e5eaf2",
-                    color: "#2563eb",
-                    fontWeight: 500,
-                    borderRadius: 2,
-                    "&:hover": { borderColor: "#2563eb", bgcolor: "#f0f6ff" }
-                  }}
-                >
-                  Choose Logo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={e => setLogoFile(e.target.files[0])}
-                  />
-                  {logoFile && (
-                    <IconButton
-                      size="small"
-                      onClick={e => { e.stopPropagation(); setLogoFile(null); }}
-                      sx={{ ml: 1, color: "#e53935" }}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </Button>
-              </Box>
-            )}
             <Button
               onClick={handleAuth}
               disabled={loading}

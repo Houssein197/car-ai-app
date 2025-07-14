@@ -26,9 +26,6 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [dealership, setDealership] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [logoUrl, setLogoUrl] = useState("");
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [logoFile, setLogoFile] = useState(null);
   const { plan } = useRouter().query;
   const router = useRouter();
 
@@ -41,8 +38,6 @@ export default function DashboardPage() {
         setCredits(100);
         const d = localStorage.getItem("dealership");
         setDealership(d || "");
-        const l = localStorage.getItem("logoUrl");
-        setLogoUrl(l || "");
       }
     });
   }, [router]);
@@ -91,10 +86,6 @@ export default function DashboardPage() {
     setError("");
     const formData = new FormData();
     files.forEach(file => formData.append("file", file));
-    // Only send logo if on paid plan and logoUrl exists
-    if (plan !== "one-time" && logoUrl) {
-      formData.append("logoUrl", logoUrl);
-    }
     try {
       const res = await fetch("/api/enhance-image", {
         method: "POST",
@@ -169,44 +160,6 @@ export default function DashboardPage() {
     if (fileInput) fileInput.value = '';
   };
 
-  // Logo upload handler for dashboard
-  const handleLogoChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    // Validate type
-    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
-      setError("Logo must be a PNG or JPG file.");
-      return;
-    }
-    // Validate size (20MB)
-    if (file.size > 20 * 1024 * 1024) {
-      setError("Logo file must be less than 20MB.");
-      return;
-    }
-    setLogoUploading(true);
-    try {
-      const ext = file.name.split('.').pop();
-      const logoFileName = `logo-${(user?.email || "user").replace(/[^a-zA-Z0-9]/g, '_')}.${ext}`;
-      const { data, error } = await supabase.storage
-        .from("logos")
-        .upload(logoFileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: file.type
-        });
-      if (error) throw error;
-      const { data: publicUrlData } = supabase.storage.from("logos").getPublicUrl(logoFileName);
-      const newLogoUrl = publicUrlData.publicUrl;
-      setLogoUrl(newLogoUrl);
-      localStorage.setItem("logoUrl", newLogoUrl);
-      setLogoFile(null);
-    } catch (err) {
-      setError("Failed to upload logo: " + (err?.message || "Please try again."));
-    } finally {
-      setLogoUploading(false);
-    }
-  };
-
   if (!user) return null;
 
   return (
@@ -236,40 +189,6 @@ export default function DashboardPage() {
           <Typography variant="h6" color="primary.main" mb={2} fontWeight={700}>
             Upload Car Photo
           </Typography>
-          {/* Logo upload for paid plans */}
-          {plan !== "one-time" && (
-            <Box mb={2}>
-              <Typography variant="body2" color="text.secondary" mb={1}>
-                {logoUrl ? "Your Logo (used for overlays)" : "Upload your logo (for overlays)"}
-              </Typography>
-              <Stack direction="row" alignItems="center" spacing={2}>
-                {logoUrl && (
-                  <Box component="img" src={logoUrl} alt="Logo preview" sx={{ height: 40, maxWidth: 120, borderRadius: 1, border: '1px solid #e5eaf2', bgcolor: '#fafbfc', p: 0.5 }} />
-                )}
-                <Button
-                  component="label"
-                  variant="outlined"
-                  size="small"
-                  sx={{ borderColor: "#e5eaf2", color: "#2563eb", fontWeight: 500, borderRadius: 2, minWidth: 0 }}
-                  disabled={logoUploading}
-                >
-                  {logoUrl ? "Change Logo" : "Upload Logo"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={handleLogoChange}
-                  />
-                </Button>
-                {logoUploading && <Typography color="primary" fontSize={14}>Uploading...</Typography>}
-                {logoUrl && (
-                  <IconButton size="small" onClick={() => { setLogoUrl(""); localStorage.removeItem("logoUrl"); }} sx={{ color: "#e53935" }}>
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                )}
-              </Stack>
-            </Box>
-          )}
           <Button
             component="label"
             variant="outlined"
