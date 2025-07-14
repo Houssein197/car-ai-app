@@ -1,41 +1,97 @@
-import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box, Button, Typography, Paper, Stack
 } from "@mui/material";
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/router";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 const plans = [
   {
     key: "one-time",
     name: "One-time",
-    desc: "Perfect for trying out — pay once and get 50 credits.",
-    price: "$49",
+    desc: "Perfect for trying out — pay once and get 10 credits.",
+    price: "£25",
+    priceId: "price_1RknfnCcxLeRC3tnGcqnb9Ft", // Replace with your real price ID
     highlight: false,
   },
   {
     key: "basic",
     name: "Basic",
     desc: "Monthly plan with 100 credits, perfect for small dealerships.",
-    price: "$99/mo",
+    price: "£150/mo",
+    priceId: "price_1Rkng8CcxLeRC3tneNBlFXmc", // Replace with your real price ID
     highlight: true,
   },
   {
     key: "pro",
     name: "Pro",
-    desc: "For high-volume sellers — 300 credits each month.",
-    price: "$199/mo",
+    desc: "For high-volume sellers — 250 credits each month.",
+    price: "£248/mo",
+    priceId: "price_1RkngVCcxLeRC3tn3AhFXshU", // Replace with your real price ID
     highlight: false,
   },
 ];
 
 export default function PricingPage() {
+  const [loadingPlan, setLoadingPlan] = useState(null);
+  const [showPlans, setShowPlans] = useState(false);
   const router = useRouter();
-  const [selected, setSelected] = useState(null);
 
-  const handleSelectPlan = (plan) => {
-    setSelected(plan);
-    router.push(`/signup?plan=${plan}`);
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/signup?redirect=/pricing");
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", user.id)
+        .single();
+      if (profile && profile.plan) {
+        router.replace("/dashboard");
+      } else {
+        setShowPlans(true);
+      }
+    })();
+  }, [router]);
+
+  const handleCheckout = async (priceId) => {
+    setLoadingPlan(priceId);
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("You must be logged in to choose a plan.");
+        setLoadingPlan(null);
+        return;
+      }
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, userId: user.id, email: user.email }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Error creating checkout session.");
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      alert("Failed to start checkout. Please try again.");
+    } finally {
+      setLoadingPlan(null);
+    }
   };
+
+  if (!showPlans) return null;
 
   return (
     <Box sx={{ bgcolor: "#f7fafd", minHeight: "100vh", py: 10 }}>
@@ -72,10 +128,11 @@ export default function PricingPage() {
               {plan.price}
             </Typography>
             <Button
-              onClick={() => handleSelectPlan(plan.key)}
+              onClick={() => handleCheckout(plan.priceId)}
               variant={plan.highlight ? "contained" : "outlined"}
               color="primary"
               size="large"
+              disabled={loadingPlan === plan.priceId}
               sx={{
                 fontWeight: 700,
                 borderRadius: 2,
@@ -90,7 +147,7 @@ export default function PricingPage() {
                 }
               }}
             >
-              Choose Plan
+              {loadingPlan === plan.priceId ? "Redirecting..." : "Choose Plan"}
             </Button>
           </Paper>
         ))}

@@ -8,9 +8,15 @@ import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import DirectionsCarFilledIcon from '@mui/icons-material/DirectionsCarFilled';
+import { createClient } from "@supabase/supabase-js";
 
 export default function Home() {
   const router = useRouter();
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
 
   return (
     <Box sx={{ bgcolor: '#fff', minHeight: '100vh', pb: 8 }}>
@@ -32,7 +38,24 @@ export default function Home() {
             Instantly upgrade your listings and sell faster with <Box component="span" color="#2563eb">autopic.ai</Box>.
           </Typography>
           <Button
-            onClick={() => router.push("/pricing")}
+            onClick={async () => {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) {
+                router.push("/signup?redirect=/pricing");
+                return;
+              }
+              // Fetch user profile
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("plan")
+                .eq("id", user.id)
+                .single();
+              if (profile && profile.plan) {
+                router.push("/dashboard");
+              } else {
+                router.push("/pricing");
+              }
+            }}
             variant="contained"
             size="large"
             sx={{

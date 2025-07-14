@@ -30,16 +30,26 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/signup");
-      } else {
-        setUser(user);
-        setCredits(100);
-        const d = localStorage.getItem("dealership");
-        setDealership(d || "");
+        router.replace("/signup?redirect=/dashboard");
+        return;
       }
-    });
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", user.id)
+        .single();
+      if (!profile || !profile.plan) {
+        router.replace("/pricing");
+        return;
+      }
+      setUser(user);
+      setCredits(100); // TODO: fetch real credits if available
+      const d = localStorage.getItem("dealership");
+      setDealership(d || "");
+    })();
   }, [router]);
 
   // When results change, reset currentIndex to last image
