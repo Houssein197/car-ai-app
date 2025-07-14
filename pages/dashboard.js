@@ -311,7 +311,7 @@ export default function DashboardPage() {
               <Typography fontSize={44} mb={1}>🏎️</Typography>
               <Typography fontSize={18} fontWeight={500}>Your showroom image will appear here</Typography>
               <Typography fontSize={14} mt={1} color="text.secondary">
-                Upload a car photo and click "Generate Image"
+                Upload a car photo and click &quot;Generate Image&quot;
               </Typography>
             </Box>
           )}
