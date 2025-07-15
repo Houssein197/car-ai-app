@@ -62,8 +62,8 @@ export default function PricingPage() {
     })();
   }, [router]);
 
-  const handleCheckout = async (priceId) => {
-    setLoadingPlan(priceId);
+  const handleCheckout = async (plan) => {
+    setLoadingPlan(plan.priceId);
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -75,7 +75,12 @@ export default function PricingPage() {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, userId: user.id, email: user.email }),
+        body: JSON.stringify({
+          priceId: plan.priceId,
+          userId: user.id,
+          customerEmail: user.email,
+          plan: plan.key
+        }),
       });
       const data = await res.json();
       if (data.url) {
@@ -128,7 +133,7 @@ export default function PricingPage() {
               {plan.price}
             </Typography>
             <Button
-              onClick={() => handleCheckout(plan.priceId)}
+              onClick={() => handleCheckout(plan)}
               variant={plan.highlight ? "contained" : "outlined"}
               color="primary"
               size="large"
