@@ -5,25 +5,34 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    res.status(405).end("Method Not Allowed");
-    return;
+    return res.status(405).end("Method Not Allowed");
   }
 
-  const { priceId, userId, email } = req.body;
-
   try {
+    const { priceId, customerEmail, userId, plan } = req.body;
+
+    if (!priceId || !customerEmail || !userId || !plan) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
     const session = await stripe.checkout.sessions.create({
-      mode: "payment", // or "subscription" if using recurring
       payment_method_types: ["card"],
-      line_items: [{ price: priceId, quantity: 1 }],
-      client_reference_id: userId || undefined,
-      customer_email: email || undefined,
-      success_url: `${req.headers.origin}/dashboard?success=true`,
-      cancel_url: `${req.headers.origin}/dashboard?canceled=true`,
+      mode: plan === "one-time" ? "payment" : "subscription",
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      client_reference_id: userId,
+      customer_email: customerEmail,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing`,
     });
 
-    res.status(200).json({ url: session.url });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(200).json({ url: session.url });
+  } catch (error) {
+    console.error("❌ Stripe Checkout Session Error:", error);
+    return res.status(500).json({ error: "Error creating checkout session" });
   }
 }
