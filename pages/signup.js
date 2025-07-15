@@ -36,10 +36,30 @@ export default function AuthPage() {
     }
     try {
       if (tab === 1) {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         // Save dealership name to localStorage
         localStorage.setItem("dealership", dealership.trim());
+        // Create profile row if not exists
+        if (data?.user?.id) {
+          try {
+            const { error: insertError } = await supabase
+              .from("profiles")
+              .insert([
+                {
+                  id: data.user.id,
+                  full_name: "",
+                  plan: "none",
+                  credits: 0,
+                },
+              ], { upsert: false });
+            if (insertError && !insertError.message.includes("duplicate")) {
+              console.error("Failed to create profile:", insertError.message);
+            }
+          } catch (profileErr) {
+            console.error("Profile creation error:", profileErr);
+          }
+        }
         setMessage("✅ Account created! Redirecting...");
         setTimeout(() => router.push("/dashboard"), 1000);
       } else {
