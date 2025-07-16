@@ -142,7 +142,7 @@ export default async function handler(req, res) {
         throw new Error("remove.bg did not return a valid image. Check your API key and credits.");
       }
 
-      // Create new minimalistic background
+      // Create new minimalistic background (RGBA for transparency)
       const width = 1920;
       const height = 1080;
       const wallHeight = Math.floor(height * 0.65); // top part
@@ -153,8 +153,8 @@ export default async function handler(req, res) {
         create: {
           width: width,
           height: wallHeight,
-          channels: 3,
-          background: "#ffffff",
+          channels: 4, // RGBA
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
         },
       };
 
@@ -163,8 +163,8 @@ export default async function handler(req, res) {
         create: {
           width,
           height: floorHeight,
-          channels: 3,
-          background: "#1F1F1F",
+          channels: 4, // RGBA
+          background: { r: 31, g: 31, b: 31, alpha: 1 },
         },
       };
 
@@ -176,8 +176,8 @@ export default async function handler(req, res) {
         create: {
           width,
           height,
-          channels: 3,
-          background: "#FFFFFF", // temp background
+          channels: 4, // RGBA
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
         },
       })
         .composite([
@@ -227,10 +227,12 @@ export default async function handler(req, res) {
         throw new Error(`Supabase final upload error: ${finalUploadError.message}`);
       }
 
-      // Atomically decrement credits
+      // Atomically decrement credits ONLY after successful upload
       const { error: updateError } = await supabase.rpc("decrement_credits", { user_id: userId, amount: 1 });
       if (updateError) {
-        return res.status(500).json({ error: "Failed to decrement credits" });
+        // Optionally: delete the uploaded image if credit decrement fails
+        await supabase.storage.from("car-images").remove([finalFileName]);
+        return res.status(500).json({ error: "Failed to decrement credits. Image not delivered." });
       }
 
       const { data: finalPublicUrlData } = supabase
