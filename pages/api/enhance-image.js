@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
   form.parse(req, async (err, fields, files) => {
     let tempFiles = [];
-    let userId = fields.userId || req.headers["x-user-id"];
+    let userId = fields.userId || fields.userid || fields.USERID || req.headers["x-user-id"];
     let newFilePath; // <-- Fix: declare newFilePath so it is always defined
     try {
       if (err) {

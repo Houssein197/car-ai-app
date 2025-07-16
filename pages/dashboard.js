@@ -103,6 +103,13 @@ export default function DashboardPage() {
     setError("");
     const formData = new FormData();
     files.forEach(file => formData.append("file", file));
+    if (user && user.id) {
+      formData.append("userId", String(user.id)); // Ensure it's a string
+    } else {
+      setError("User not found. Please log in again.");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/enhance-image", {
         method: "POST",
