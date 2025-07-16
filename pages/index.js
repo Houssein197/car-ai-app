@@ -33,16 +33,16 @@ export default function Home() {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 800, letterSpacing: 1, color: '#2563eb' }}>
             autopic.ai
           </Typography>
-          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/pricing")}>Pricing</Button>
+          <Button color="inherit" sx={{ mr: 2, color: '#fff', fontSize: '1.25rem' }} onClick={() => router.push("/pricing")}>Pricing</Button>
           {loggedIn ? (
             <>
-              <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/dashboard")}>Dashboard</Button>
-              <Button color="inherit" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); router.push("/signup"); }}>Logout</Button>
+              <Button color="inherit" sx={{ mr: 2, color: '#fff', fontSize: '1.25rem' }} onClick={() => router.push("/dashboard")}>Dashboard</Button>
+              <Button color="inherit" sx={{ color: '#fff', fontSize: '1.25rem' }} onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); router.push("/signup"); }}>Logout</Button>
             </>
           ) : (
             <>
-              <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/signup")}>Login</Button>
-              <Button color="primary" variant="outlined" onClick={() => router.push("/signup")}>Sign Up</Button>
+              <Button color="inherit" sx={{ mr: 2, color: '#fff', fontSize: '1.25rem' }} onClick={() => router.push("/signup?tab=login")}>Login</Button>
+              <Button color="primary" variant="outlined" sx={{ color: '#fff', borderColor: '#fff', fontSize: '1.25rem' }} onClick={() => router.push("/signup?tab=signup")}>Sign Up</Button>
             </>
           )}
         </Toolbar>

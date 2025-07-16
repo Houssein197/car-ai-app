@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -22,7 +22,12 @@ export default function AuthPage() {
   const [message, setMessage] = useState("");
   const [dealershipError, setDealershipError] = useState(false);
   const router = useRouter();
-  const { plan } = router.query;
+  const { plan, tab: tabParam } = router.query;
+
+  useEffect(() => {
+    if (tabParam === 'signup') setTab(1);
+    else if (tabParam === 'login') setTab(0);
+  }, [tabParam]);
 
   const handleAuth = async () => {
     setLoading(true);
