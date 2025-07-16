@@ -1,9 +1,6 @@
-import { buffer } from "micro";
-import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+import { buffer } from 'micro';
+import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
 export const config = {
   api: {
@@ -11,55 +8,57 @@ export const config = {
   },
 };
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).end("Method Not Allowed");
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
   }
 
+  const sig = req.headers['stripe-signature'];
   const buf = await buffer(req);
-  const sig = req.headers["stripe-signature"];
 
   let event;
 
   try {
     event = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error("❌ Webhook signature verification failed.", err.message);
+    console.error('❌ Error verifying Stripe webhook signature:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === "checkout.session.completed") {
+  if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
     const userId = session.client_reference_id;
-    const plan = session.metadata?.plan || "one-time"; // fallback if needed
+    const plan = session.metadata?.plan || 'unknown';
 
-    let newCredits = 0;
-    if (plan === "one-time") newCredits = 10;
-    if (plan === "basic") newCredits = 100;
-    if (plan === "pro") newCredits = 250;
+    console.log('✅ Stripe session completed for user:', userId, 'with plan:', plan);
 
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          plan,
-          credits: newCredits,
-        })
-        .eq("id", userId);
+    // Define credits based on plan
+    const creditsByPlan = {
+      'one-time': 10,
+      'basic': 100,
+      'pro': 250,
+    };
 
-      if (error) {
-        console.error("❌ Supabase update error:", error);
-        return res.status(500).send("Supabase update failed");
-      }
+    const credits = creditsByPlan[plan] || 0;
 
-      console.log(`✅ Updated user ${userId} to plan ${plan} with ${newCredits} credits`);
-    } catch (err) {
-      console.error("❌ Server error:", err);
-      return res.status(500).send("Server error");
+    // Update Supabase profile
+    const { error } = await supabase
+      .from('profiles')
+      .update({ plan, credits })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('❌ Supabase update failed:', error.message);
+      return res.status(500).send('Supabase update failed');
     }
+
+    console.log('✅ Supabase updated successfully for user:', userId);
+    return res.status(200).send('✅ Supabase updated successfully');
   }
 
-  res.status(200).json({ received: true });
+  res.status(200).send('Webhook received');
 }
