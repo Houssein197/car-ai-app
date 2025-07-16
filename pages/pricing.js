@@ -16,7 +16,7 @@ const plans = [
     name: "One-time",
     desc: "Perfect for trying out — pay once and get 10 credits.",
     price: "£25",
-    priceId: "price_1RlTHtCcxLeRC3tnxzHeX1fq", // Test price ID for one-time
+    priceId: "price_1RknfnCcxLeRC3tnGcqnb9Ft", // Live price ID for one-time
     highlight: false,
   },
   {
@@ -24,7 +24,7 @@ const plans = [
     name: "Basic",
     desc: "Monthly plan with 100 credits, perfect for small dealerships.",
     price: "£150/mo",
-    priceId: "price_1RlTIDCcxLeRC3tnNk17kCrt", // Test price ID for basic
+    priceId: "price_1Rkng8CcxLeRC3tneNBlFXmc", // Live price ID for basic
     highlight: true,
   },
   {
@@ -32,7 +32,7 @@ const plans = [
     name: "Pro",
     desc: "For high-volume sellers — 250 credits each month.",
     price: "£248/mo",
-    priceId: "price_1RlTIZCcxLeRC3tnIA5gbxkU", // Test price ID for pro
+    priceId: "price_1RkngVCcxLeRC3tn3AhFXshU", // Live price ID for pro
     highlight: false,
   },
 ];
