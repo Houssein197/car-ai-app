@@ -198,11 +198,15 @@ export default async function handler(req, res) {
         .blur(50)
         .toBuffer();
 
+      // For debugging: save the buffer to disk (optional, remove after debugging)
+      // fs.writeFileSync('/tmp/removebg-output.png', bgRemovedBuffer);
+      console.log('Compositing with remove.bg buffer, size:', bgRemovedBuffer.length);
+
       // Compose final image
       const finalImage = await sharp(background)
         .composite([
           { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
-          { input: bgRemovedBuffer, top: 0, left: 0 },
+          { input: bgRemovedBuffer, top: 0, left: 0 }, // Use buffer as-is
         ])
         .png()
         .toBuffer();
@@ -214,7 +218,7 @@ export default async function handler(req, res) {
 
       const { error: finalUploadError } = await supabase.storage
         .from("car-images")
-        .upload(finalFileName, finalBuffer, {
+        .upload(finalFileName, finalImage, {
           contentType: "image/png",
           upsert: false,
         });
