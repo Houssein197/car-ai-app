@@ -194,10 +194,12 @@ export default async function handler(req, res) {
         .toBuffer();
 
       // Compose final image
+      const carPngBuffer = await sharp(bgRemovedBuffer).toBuffer();
+
       const finalImage = await sharp(background)
         .composite([
           { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
-          { input: bgRemovedBuffer, top: 0, left: 0 },
+          { input: carPngBuffer, top: 0, left: 0 },
         ])
         .png()
         .toBuffer();
