@@ -106,6 +106,9 @@ export default async function handler(req, res) {
         throw new Error(`Supabase upload error: ${tempUploadError.message}`);
       }
 
+      // Wait for Supabase public URL to be available
+      await new Promise(r => setTimeout(r, 1500));
+
       const { data: tempPublicUrlData } = supabase
         .storage
         .from("car-images")

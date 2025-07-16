@@ -120,13 +120,13 @@ export default function DashboardPage() {
         throw new Error(`Server error: ${text}`);
       }
       const data = await res.json();
-      if (data.imageUrls) {
+      if (data.imageUrl) {
         setResults(prev => [
           ...prev,
-          ...data.imageUrls.map((url, i) => ({
-            url,
-            name: data.names[i] || `Image ${i + 1}`
-          }))
+          {
+            url: data.imageUrl,
+            name: `Generated Image ${prev.length + 1}`
+          }
         ]);
         // Refetch credits from Supabase after generation
         const { data: profile } = await supabase
@@ -136,7 +136,7 @@ export default function DashboardPage() {
           .single();
         setCredits(profile?.credits ?? 0);
       } else {
-        throw new Error("No image URLs returned from server.");
+        throw new Error("No image URL returned from server.");
       }
     } catch (error) {
       setError(error.message || "Error processing images. Please try again.");
@@ -354,7 +354,7 @@ export default function DashboardPage() {
         </Paper>
       </Stack>
       <Box textAlign="center" mt={6} color="text.secondary" fontSize={14}>
-        <Typography variant="body2">Powered by AutoPic.ai</Typography>
+        <Typography variant="body2">Powered by AutoPic.co.uk</Typography>
       </Box>
     </Box>
   );
