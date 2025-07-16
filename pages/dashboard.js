@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [dealership, setDealership] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [userPlan, setUserPlan] = useState("");
   const { plan } = useRouter().query;
   const router = useRouter();
 
@@ -38,7 +39,7 @@ export default function DashboardPage() {
       }
       const { data: profile } = await supabase
         .from("profiles")
-        .select("plan")
+        .select("plan, credits")
         .eq("id", user.id)
         .single();
       if (!profile || !profile.plan) {
@@ -46,7 +47,8 @@ export default function DashboardPage() {
         return;
       }
       setUser(user);
-      setCredits(100); // TODO: fetch real credits if available
+      setCredits(profile.credits ?? 0);
+      setUserPlan(profile.plan || "");
       const d = localStorage.getItem("dealership");
       setDealership(d || "");
     })();
@@ -92,6 +94,10 @@ export default function DashboardPage() {
       setError("Please upload images first!");
       return;
     }
+    if (credits <= 0) {
+      setError("You have no credits left. Please upgrade your plan.");
+      return;
+    }
     setLoading(true);
     setError("");
     const formData = new FormData();
@@ -114,7 +120,13 @@ export default function DashboardPage() {
             name: data.names[i] || `Image ${i + 1}`
           }))
         ]);
-        setCredits(c => c - data.imageUrls.length);
+        // Refetch credits from Supabase after generation
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("credits")
+          .eq("id", user.id)
+          .single();
+        setCredits(profile?.credits ?? 0);
       } else {
         throw new Error("No image URLs returned from server.");
       }
@@ -175,17 +187,23 @@ export default function DashboardPage() {
   return (
     <Box sx={{ bgcolor: "#f7fafd", minHeight: "100vh", p: { xs: 2, md: 6 } }}>
       {/* Header */}
-      <Box sx={{
-        display: "flex", justifyContent: "flex-end", alignItems: "center", mb: 4
-      }}>
-        <Typography variant="body1" color="text.secondary" sx={{ mr: 3 }}>
-          <b>{dealership || user.email}</b> • <b>{credits}</b> credits
-        </Typography>
-        <IconButton onClick={handleLogout} size="small" sx={{
-          color: "#2563eb", border: "1px solid #e5eaf2", borderRadius: 2, ml: 1
-        }}>
-          <LogoutIcon fontSize="small" />
-        </IconButton>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/pricing")}>Pricing</Button>
+          {userPlan && (
+            <Typography variant="body1" sx={{ ml: 2, fontWeight: 700, color: '#2563eb', border: '1px solid #2563eb', borderRadius: 2, px: 2, py: 0.5, bgcolor: '#e8f0fe' }}>
+              {userPlan.charAt(0).toUpperCase() + userPlan.slice(1)} Plan
+            </Typography>
+          )}
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Typography variant="body1" color="text.secondary" sx={{ mr: 3 }}>
+            <b>{dealership || user.email}</b> • <b>{credits}</b> credits
+          </Typography>
+          <IconButton onClick={handleLogout} size="small" sx={{ color: "#2563eb", border: "1px solid #e5eaf2", borderRadius: 2, ml: 1 }}>
+            <LogoutIcon fontSize="small" />
+          </IconButton>
+        </Box>
       </Box>
       {/* Main Content */}
       <Stack direction={{ xs: "column", md: "row" }} spacing={4} alignItems="flex-start" justifyContent="center">
@@ -229,7 +247,7 @@ export default function DashboardPage() {
           )}
           <Button
             onClick={handleGenerate}
-            disabled={loading || !files.length}
+            disabled={loading || !files.length || credits <= 0}
             variant="outlined"
             fullWidth
             size="large"

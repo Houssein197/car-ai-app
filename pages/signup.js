@@ -61,7 +61,7 @@ export default function AuthPage() {
           }
         }
         setMessage("✅ Account created! Redirecting...");
-        setTimeout(() => router.push("/dashboard"), 1000);
+        setTimeout(() => router.push("/pricing"), 1000);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -109,7 +109,7 @@ export default function AuthPage() {
             <Tab label="Login" />
             <Tab label="Sign Up" />
           </Tabs>
-          <Box component="form" noValidate autoComplete="off">
+          <Box component="form" noValidate autoComplete="off" onSubmit={e => { e.preventDefault(); handleAuth(); }}>
             {tab === 1 && (
               <TextField
                 label="Car Dealership Name"
@@ -182,7 +182,7 @@ export default function AuthPage() {
               }}
             />
             <Button
-              onClick={handleAuth}
+              type="submit"
               disabled={loading}
               variant="contained"
               fullWidth

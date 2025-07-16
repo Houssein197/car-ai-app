@@ -15,6 +15,7 @@ export default function PaymentSuccess() {
 
   useEffect(() => {
     let interval;
+    let timeout;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -30,11 +31,20 @@ export default function PaymentSuccess() {
           .single();
         if (profile && profile.plan && profile.plan !== "none") {
           clearInterval(interval);
+          clearTimeout(timeout);
           router.replace("/dashboard");
         }
-      }, 2000);
+      }, 500);
+      // Fallback: after 5 seconds, redirect anyway
+      timeout = setTimeout(() => {
+        clearInterval(interval);
+        router.replace("/dashboard");
+      }, 5000);
     })();
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, [router]);
 
   return (
