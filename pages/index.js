@@ -9,6 +9,8 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import DirectionsCarFilledIcon from '@mui/icons-material/DirectionsCarFilled';
 import { createClient } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
+import Image from 'next/image';
 
 export default function Home() {
   const router = useRouter();
@@ -18,6 +20,11 @@ export default function Home() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
+  const [loggedIn, setLoggedIn] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setLoggedIn(!!user));
+  }, []);
+
   return (
     <Box sx={{ bgcolor: '#fff', minHeight: '100vh', pb: 8 }}>
       <AppBar position="static" elevation={0} sx={{ bgcolor: '#fff', color: '#2563eb', boxShadow: 'none', borderBottom: '1px solid #e5eaf2' }}>
@@ -26,6 +33,18 @@ export default function Home() {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 800, letterSpacing: 1, color: '#2563eb' }}>
             autopic.ai
           </Typography>
+          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/pricing")}>Pricing</Button>
+          {loggedIn ? (
+            <>
+              <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/dashboard")}>Dashboard</Button>
+              <Button color="inherit" onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); router.push("/signup"); }}>Logout</Button>
+            </>
+          ) : (
+            <>
+              <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/signup")}>Login</Button>
+              <Button color="primary" variant="outlined" onClick={() => router.push("/signup")}>Sign Up</Button>
+            </>
+          )}
         </Toolbar>
       </AppBar>
       <Container maxWidth="md" sx={{ py: { xs: 6, md: 10 } }}>
@@ -67,11 +86,51 @@ export default function Home() {
             Get Started
           </Button>
         </Box>
+        {/* Before and After section */}
+        <Box textAlign="center" mb={10}>
+          <Typography variant="h4" fontWeight={700} color="#2563eb" mb={4}>
+            See the Difference
+          </Typography>
+          <Box display="flex" justifyContent="center" alignItems="center" gap={8} flexWrap="nowrap">
+            <Box>
+              <Typography variant="subtitle1" mb={1}>Before</Typography>
+              <Box
+                sx={{
+                  width: 600,
+                  height: 375,
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 24px 0 #2563eb22',
+                  border: '2px solid #e5eaf2',
+                  mb: 2,
+                }}
+              >
+                <Image src="/before.png" alt="Before" width={600} height={375} style={{ objectFit: 'cover' }} />
+              </Box>
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" mb={1}>After</Typography>
+              <Box
+                sx={{
+                  width: 600,
+                  height: 375,
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 24px 0 #2563eb22',
+                  border: '2px solid #e5eaf2',
+                  mb: 2,
+                }}
+              >
+                <Image src="/after.png" alt="After" width={600} height={375} style={{ objectFit: 'cover' }} />
+              </Box>
+            </Box>
+          </Box>
+        </Box>
         {/* Features section */}
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} justifyContent="center" alignItems="stretch" mb={8}>
           {[{
             title: 'AI-enhanced quality',
-            desc: 'Our AI polishes every detail to give your photos a true luxury showroom feel.'
+            desc: 'Our AI polishes every detail to give your photos a true professional feel.'
           }, {
             title: 'Fast and effortless',
             desc: 'Upload, process, and download — all in under a minute.'
