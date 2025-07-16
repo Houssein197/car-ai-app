@@ -117,7 +117,7 @@ export default async function handler(req, res) {
       const removeBgRes = await fetch("https://api.remove.bg/v1.0/removebg", {
         method: "POST",
         headers: {
-          "X-Api-Key": process.env.REMOVE_BG_API_KEY,
+          "X-Api-Key": process.env.REMOVEBG_API_KEY,
         },
         body: new URLSearchParams({
           image_url: carUrl,
