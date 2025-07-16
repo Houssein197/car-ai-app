@@ -15,6 +15,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
+    const successUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`;
+    const cancelUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/pricing`;
+    console.log('Stripe Checkout URLs:', { successUrl, cancelUrl });
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: plan === "one-time" ? "payment" : "subscription",
@@ -26,8 +29,8 @@ export default async function handler(req, res) {
       ],
       client_reference_id: userId,
       customer_email: customerEmail,
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     });
 
     return res.status(200).json({ url: session.url });
