@@ -142,8 +142,8 @@ export default async function handler(req, res) {
       // Wall (top) layer
       const wall = {
         create: {
-          width: outputWidth,
-          height: outputHeight,
+          width: width,
+          height: wallHeight,
           channels: 3,
           background: "#ffffff",
         },
