@@ -131,7 +131,11 @@ export default async function handler(req, res) {
         throw new Error(`remove.bg error: ${errorText}`);
       }
       const bgRemovedBuffer = await removeBgRes.buffer();
-      console.log("✅ Background removed");
+      console.log("✅ Background removed, buffer size:", bgRemovedBuffer.length);
+
+      if (!bgRemovedBuffer || bgRemovedBuffer.length < 1000) {
+        throw new Error("remove.bg did not return a valid image. Check your API key and credits.");
+      }
 
       // Create new minimalistic background
       const width = 1920;
