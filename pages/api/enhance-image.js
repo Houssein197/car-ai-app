@@ -131,7 +131,12 @@ export default async function handler(req, res) {
         throw new Error(`remove.bg error: ${errorText}`);
       }
       const bgRemovedBuffer = await removeBgRes.buffer();
-      console.log("✅ Background removed, buffer size:", bgRemovedBuffer.length);
+      const contentType = removeBgRes.headers.get('content-type');
+      console.log('remove.bg content-type:', contentType);
+
+      if (!contentType || !contentType.startsWith('image/')) {
+        throw new Error('remove.bg did not return an image. Check your API key, credits, or file type.');
+      }
 
       if (!bgRemovedBuffer || bgRemovedBuffer.length < 1000) {
         throw new Error("remove.bg did not return a valid image. Check your API key and credits.");
@@ -194,12 +199,10 @@ export default async function handler(req, res) {
         .toBuffer();
 
       // Compose final image
-      const carPngBuffer = await sharp(bgRemovedBuffer).toBuffer();
-
       const finalImage = await sharp(background)
         .composite([
           { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
-          { input: carPngBuffer, top: 0, left: 0 },
+          { input: bgRemovedBuffer, top: 0, left: 0 },
         ])
         .png()
         .toBuffer();
