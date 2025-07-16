@@ -43,7 +43,8 @@ export default function DashboardPage() {
         .eq("id", user.id)
         .single();
       if (!profile || !profile.plan) {
-        router.replace("/pricing");
+        // Instead of redirecting to /pricing, send to /payment-success to wait for plan activation
+        router.replace("/payment-success");
         return;
       }
       setUser(user);
