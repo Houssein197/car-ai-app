@@ -202,14 +202,30 @@ export default async function handler(req, res) {
       // fs.writeFileSync('/tmp/removebg-output.png', bgRemovedBuffer);
       console.log('Compositing with remove.bg buffer, size:', bgRemovedBuffer.length);
 
-      // Compose final image
-      const finalImage = await sharp(background)
-        .composite([
-          { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
-          { input: bgRemovedBuffer, top: 0, left: 0 }, // Use buffer as-is
-        ])
-        .png()
-        .toBuffer();
+      // Extra logging for debugging
+      console.log("remove.bg content-type:", contentType);
+      console.log("remove.bg buffer size:", bgRemovedBuffer.length);
+
+      // Validate image buffer from remove.bg before passing to sharp
+      try {
+        await sharp(bgRemovedBuffer).metadata(); // throws if not a real image
+      } catch (err) {
+        throw new Error("remove.bg returned an invalid image buffer. Possibly an HTML or error message.");
+      }
+
+      // Compose final image with robust error handling
+      let finalImage;
+      try {
+        finalImage = await sharp(background)
+          .composite([
+            { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
+            { input: bgRemovedBuffer, top: 0, left: 0 },
+          ])
+          .png()
+          .toBuffer();
+      } catch (err) {
+        throw new Error("Sharp failed to compose the image: " + err.message);
+      }
 
       // Upload final image to Supabase
       const finalFileName = `luxury-showroom-${Date.now()}-${Math.random()
