@@ -48,6 +48,8 @@ export default async function handler(req, res) {
 
   form.parse(req, async (err, fields, files) => {
     let tempFiles = [];
+    let userId = fields.userId || req.headers["x-user-id"];
+    let newFilePath; // <-- Fix: declare newFilePath so it is always defined
     try {
       if (err) {
         return res.status(500).json({ error: "Form parse error" });
@@ -55,6 +57,23 @@ export default async function handler(req, res) {
 
       if (!files.file || !files.file[0]) {
         return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      if (!userId) {
+        return res.status(400).json({ error: "Missing userId" });
+      }
+
+      // Check credits in Supabase
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("id", userId)
+        .single();
+      if (profileError || !profile) {
+        return res.status(403).json({ error: "User not found" });
+      }
+      if ((profile.credits ?? 0) < 1) {
+        return res.status(403).json({ error: "Not enough credits" });
       }
 
       const file = files.file[0];
@@ -193,6 +212,12 @@ export default async function handler(req, res) {
 
       if (finalUploadError) {
         throw new Error(`Supabase final upload error: ${finalUploadError.message}`);
+      }
+
+      // Atomically decrement credits
+      const { error: updateError } = await supabase.rpc("decrement_credits", { user_id: userId, amount: 1 });
+      if (updateError) {
+        return res.status(500).json({ error: "Failed to decrement credits" });
       }
 
       const { data: finalPublicUrlData } = supabase
