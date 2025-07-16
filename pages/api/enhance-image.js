@@ -208,6 +208,8 @@ export default async function handler(req, res) {
       // Extra logging for debugging
       console.log("remove.bg content-type:", contentType);
       console.log("remove.bg buffer size:", bgRemovedBuffer.length);
+      console.log("First 100 bytes of buffer:", bgRemovedBuffer.slice(0, 100).toString('hex'));
+      fs.writeFileSync('/tmp/removebg-debug.png', bgRemovedBuffer);
 
       // Validate image buffer from remove.bg before passing to sharp
       try {
@@ -216,13 +218,17 @@ export default async function handler(req, res) {
         throw new Error("remove.bg returned an invalid image buffer. Possibly an HTML or error message.");
       }
 
+      // Ensure both background and car image are RGBA
+      const carImage = await sharp(bgRemovedBuffer).ensureAlpha().toBuffer();
+      const backgroundRGBA = await sharp(background).ensureAlpha().toBuffer();
+
       // Compose final image with robust error handling
       let finalImage;
       try {
-        finalImage = await sharp(background)
+        finalImage = await sharp(backgroundRGBA)
           .composite([
             { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
-            { input: bgRemovedBuffer, top: 0, left: 0 },
+            { input: carImage, top: 0, left: 0 },
           ])
           .png()
           .toBuffer();
@@ -260,10 +266,10 @@ export default async function handler(req, res) {
         .getPublicUrl(finalFileName);
       const finalPublicUrl = finalPublicUrlData.publicUrl;
 
-      res.status(200).json({
-        imageUrl: finalPublicUrl,
-        success: true,
-        message: "Image processed and uploaded successfully",
+      return res.status(200).json({
+        imageUrl: finalPublicUrlData.publicUrl,
+        name: finalFileName,
+        success: true
       });
     } catch (error) {
       console.error("🔥 API error:", error);
