@@ -57,12 +57,10 @@ export default function PricingPage() {
         .select("plan")
         .eq("id", user.id)
         .single();
-      if (profile && profile.plan) {
-        setUserPlan(profile.plan);
-        router.replace("/dashboard");
-      } else {
-        setShowPlans(true);
+      if (profile) {
+        setUserPlan(profile.plan || "");
       }
+      setShowPlans(true);
     })();
   }, [router]);
 

@@ -49,6 +49,9 @@ export default async function handler(req, res) {
   form.parse(req, async (err, fields, files) => {
     let tempFiles = [];
     let userId = fields.userId || fields.userid || fields.USERID || req.headers["x-user-id"];
+    if (Array.isArray(userId)) {
+      userId = userId[0];
+    }
     let newFilePath; // <-- Fix: declare newFilePath so it is always defined
     try {
       if (err) {
@@ -142,93 +145,60 @@ export default async function handler(req, res) {
       }
 
       if (!bgRemovedBuffer || bgRemovedBuffer.length < 1000) {
-        throw new Error("remove.bg did not return a valid image. Check your API key and credits.");
+        throw new Error("remove.bg did not return a valid image. Buffer too small.");
       }
 
-      // Create new minimalistic background (RGBA for transparency)
-      const width = 1920;
-      const height = 1080;
-      const wallHeight = Math.floor(height * 0.65); // top part
-      const floorHeight = height - wallHeight;
-
-      // Wall (top) layer
-      const wall = {
-        create: {
-          width: width,
-          height: wallHeight,
-          channels: 4, // RGBA
-          background: { r: 255, g: 255, b: 255, alpha: 1 },
-        },
-      };
-
-      // Floor (bottom) layer
-      const floor = {
-        create: {
-          width,
-          height: floorHeight,
-          channels: 4, // RGBA
-          background: { r: 31, g: 31, b: 31, alpha: 1 },
-        },
-      };
-
-      // Merge wall and floor
-      const wallBuffer = await sharp(wall).toBuffer();
-      const floorBuffer = await sharp(floor).toBuffer();
-
-      const background = await sharp({
-        create: {
-          width,
-          height,
-          channels: 4, // RGBA
-          background: { r: 255, g: 255, b: 255, alpha: 1 },
-        },
-      })
-        .composite([
-          { input: wallBuffer, top: 0, left: 0 },
-          { input: floorBuffer, top: wallHeight, left: 0 },
-        ])
-        .toBuffer();
-
-      // Optional shadow under car
-      const shadow = await sharp({
-        create: {
-          width: 800,
-          height: 200,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0.3 },
-        },
-      })
-        .blur(50)
-        .toBuffer();
-
-      // For debugging: save the buffer to disk (optional, remove after debugging)
-      // fs.writeFileSync('/tmp/removebg-output.png', bgRemovedBuffer);
-      console.log('Compositing with remove.bg buffer, size:', bgRemovedBuffer.length);
-
-      // Extra logging for debugging
-      console.log("remove.bg content-type:", contentType);
-      console.log("remove.bg buffer size:", bgRemovedBuffer.length);
-      console.log("First 100 bytes of buffer:", bgRemovedBuffer.slice(0, 100).toString('hex'));
-      fs.writeFileSync('/tmp/removebg-debug.png', bgRemovedBuffer);
-
-      // Validate image buffer from remove.bg before passing to sharp
+      // Validate the buffer is a real image before proceeding
       try {
-        await sharp(bgRemovedBuffer).metadata(); // throws if not a real image
+        await sharp(bgRemovedBuffer).metadata(); // Just validation here
       } catch (err) {
-        throw new Error("remove.bg returned an invalid image buffer. Possibly an HTML or error message.");
+        // Log the first 200 bytes for debugging
+        console.error("remove.bg buffer is not a valid image. First 200 bytes as text:\n", bgRemovedBuffer.slice(0, 200).toString());
+        throw new Error("Invalid image returned from remove.bg — sharp couldn't read it.");
       }
 
-      // Ensure both background and car image are RGBA
-      const carImage = await sharp(bgRemovedBuffer).ensureAlpha().toBuffer();
-      const backgroundRGBA = await sharp(background).ensureAlpha().toBuffer();
+      // Get dimensions of the car image returned from remove.bg
+      const carMeta = await sharp(bgRemovedBuffer).metadata();
+      const carWidth = carMeta.width;
+      const carHeight = carMeta.height;
+      const padding = 80; // px padding around car
+      const wallHeight = Math.floor(carHeight * 0.65) + Math.floor(padding / 2);
+      const floorHeight = Math.floor(carHeight * 0.35) + Math.floor(padding / 2);
+      const bgWidth = carWidth + padding * 2;
+      const bgHeight = wallHeight + floorHeight;
 
-      // Compose final image with robust error handling
+      // --- MODERN GRADIENT BACKGROUND BASED ON CAR SIZE ---
+      // Create a vertical gradient from #f5f5f5 (top) to #ffffff (bottom)
+      const { createCanvas } = require('canvas');
+      const canvas = createCanvas(bgWidth, bgHeight);
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, bgHeight);
+      gradient.addColorStop(0, '#f5f5f5');
+      gradient.addColorStop(1, '#ffffff');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, bgWidth, bgHeight);
+      const background = canvas.toBuffer('image/png');
+
+      // Center car horizontally, place at top with padding
+      const carLeft = Math.floor((bgWidth - carWidth) / 2);
+      const carTop = Math.floor(padding / 2);
+
+      // Ensure car image buffer is a valid PNG for sharp composite
+      let carImage;
+      try {
+        carImage = await sharp(bgRemovedBuffer).png().toBuffer();
+      } catch (err) {
+        // Log the first 200 bytes for debugging
+        console.error("remove.bg buffer could not be converted to PNG. First 200 bytes as text:\n", bgRemovedBuffer.slice(0, 200).toString());
+        return res.status(500).json({ error: "remove.bg returned an invalid image buffer. Possibly an HTML or error message." });
+      }
+
+      // Compose final image (no custom shadow)
       let finalImage;
       try {
-        finalImage = await sharp(backgroundRGBA)
+        finalImage = await sharp(background)
           .composite([
-            { input: shadow, top: wallHeight - 100, left: (width - 800) / 2 },
-            { input: carImage, top: 0, left: 0 },
+            { input: carImage, top: carTop, left: carLeft },
           ])
           .png()
           .toBuffer();
@@ -253,11 +223,13 @@ export default async function handler(req, res) {
       }
 
       // Atomically decrement credits ONLY after successful upload
-      const { error: updateError } = await supabase.rpc("decrement_credits", { user_id: userId, amount: 1 });
+      const { error: updateError, data: updateData } = await supabase.rpc("decrement_credits", { user_id: userId, amount: 1 });
       if (updateError) {
+        console.error("❌ Failed to decrement credits via RPC:", updateError);
+        console.error("❌ RPC error details:", JSON.stringify(updateError, null, 2));
         // Optionally: delete the uploaded image if credit decrement fails
         await supabase.storage.from("car-images").remove([finalFileName]);
-        return res.status(500).json({ error: "Failed to decrement credits. Image not delivered." });
+        return res.status(500).json({ error: updateError.message || "Failed to decrement credits. Image not delivered." });
       }
 
       const { data: finalPublicUrlData } = supabase

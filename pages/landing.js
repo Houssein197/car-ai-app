@@ -15,6 +15,9 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import ShareIcon from '@mui/icons-material/Share';
 import ClearIcon from '@mui/icons-material/Clear';
+import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/router";
+import React from "react";
 
 export default function Home() {
   const [file, setFile] = useState(null);
@@ -22,6 +25,32 @@ export default function Home() {
   const [previewUrl, setPreviewUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [credits, setCredits] = useState(null);
+  const [user, setUser] = useState(null);
+  const router = useRouter();
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  // On mount, check login and fetch credits
+  React.useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/signup?redirect=/landing");
+        return;
+      }
+      setUser(user);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("id", user.id)
+        .single();
+      setCredits(profile?.credits ?? 0);
+    })();
+    // eslint-disable-next-line
+  }, []);
 
   const handleFileChange = (e) => {
     const uploadedFile = e.target.files[0];
@@ -48,11 +77,22 @@ export default function Home() {
       setError("Please upload an image first!");
       return;
     }
+    if (credits === 0) {
+      setError("You have no credits left. Please upgrade your plan.");
+      return;
+    }
     setLoading(true);
     setImageUrl("");
     setError("");
     const formData = new FormData();
     formData.append("file", file);
+    if (user && user.id) {
+      formData.append("userId", String(user.id));
+    } else {
+      setError("User not found. Please log in again.");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/enhance-image", {
         method: "POST",
@@ -65,6 +105,13 @@ export default function Home() {
       const data = await res.json();
       if (data.imageUrl) {
         setImageUrl(data.imageUrl);
+        // Refetch credits after generation
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("credits")
+          .eq("id", user.id)
+          .single();
+        setCredits(profile?.credits ?? 0);
       } else {
         throw new Error("No image URL returned from server.");
       }
@@ -184,7 +231,7 @@ export default function Home() {
             <CardActions sx={{ mt: 2, display: 'flex', gap: 1 }}>
               <Button
                 onClick={handleGenerate}
-                disabled={loading || !file}
+                disabled={loading || !file || credits === 0 || credits === null}
                 variant="contained"
                 color="primary"
                 fullWidth
