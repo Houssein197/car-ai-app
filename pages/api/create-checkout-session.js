@@ -31,6 +31,11 @@ export default async function handler(req, res) {
       customer_email: customerEmail,
       success_url: successUrl,
       cancel_url: cancelUrl,
+      metadata: {
+        plan: plan,
+        userId: userId,
+        email: customerEmail,
+      },
     });
 
     return res.status(200).json({ url: session.url });

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { createClient } from "@supabase/supabase-js";
-import { Box, Typography, CircularProgress } from "@mui/material";
+import { Box, Typography, CircularProgress, Button } from "@mui/material";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -12,6 +12,7 @@ export default function PaymentSuccess() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
+  const [waited, setWaited] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -35,11 +36,13 @@ export default function PaymentSuccess() {
           router.replace("/dashboard");
         }
       }, 500);
-      // Fallback: after 5 seconds, redirect anyway
+      // Fallback: after 10 seconds, show error
       timeout = setTimeout(() => {
         clearInterval(interval);
-        router.replace("/dashboard");
-      }, 5000);
+        setWaited(true);
+        setError("Your payment was received, but your plan is not yet active. Please refresh or contact support if this persists.");
+        setChecking(false);
+      }, 10000);
     })();
     return () => {
       clearInterval(interval);
@@ -49,14 +52,27 @@ export default function PaymentSuccess() {
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", bgcolor: "#f7fafd" }}>
-      <CircularProgress sx={{ color: "#2563eb", mb: 4 }} size={48} />
-      <Typography variant="h4" fontWeight={700} color="#2563eb" mb={2}>
-        Finalizing your purchase...
-      </Typography>
-      <Typography color="text.secondary" mb={2}>
-        Please wait while we activate your plan and credits.
-      </Typography>
-      {error && <Typography color="error.main">{error}</Typography>}
+      {checking && (
+        <>
+          <CircularProgress sx={{ color: "#2563eb", mb: 4 }} size={48} />
+          <Typography variant="h4" fontWeight={700} color="#2563eb" mb={2}>
+            Finalizing your purchase...
+          </Typography>
+          <Typography color="text.secondary" mb={2}>
+            Please wait while we activate your plan and credits.
+          </Typography>
+        </>
+      )}
+      {error && (
+        <>
+          <Typography color="error.main" mb={2}>{error}</Typography>
+          {waited && (
+            <Button variant="contained" color="primary" onClick={() => router.reload()}>
+              Refresh
+            </Button>
+          )}
+        </>
+      )}
     </Box>
   );
 } 

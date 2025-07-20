@@ -34,7 +34,10 @@ export default async function handler(req, res) {
     const userId = session.client_reference_id;
     const plan = session.metadata?.plan || 'unknown';
 
-    console.log('✅ Stripe session completed for user:', userId, 'with plan:', plan);
+    if (!userId) {
+      console.error('❌ No userId (client_reference_id) in Stripe session.');
+      return res.status(400).send('No userId in session');
+    }
 
     // Define credits based on plan
     const creditsByPlan = {
@@ -45,19 +48,18 @@ export default async function handler(req, res) {
 
     const credits = creditsByPlan[plan] || 0;
 
-    // Update Supabase profile
+    // Upsert Supabase profile (create if missing, update if exists)
     const { error } = await supabase
       .from('profiles')
-      .update({ plan, credits })
-      .eq('id', userId);
+      .upsert({ id: userId, plan, credits }, { onConflict: 'id' });
 
     if (error) {
-      console.error('❌ Supabase update failed:', error.message);
-      return res.status(500).send('Supabase update failed');
+      console.error('❌ Supabase upsert failed:', error.message);
+      return res.status(500).send('Supabase upsert failed');
     }
 
-    console.log('✅ Supabase updated successfully for user:', userId);
-    return res.status(200).send('✅ Supabase updated successfully');
+    console.log('✅ Supabase upserted successfully for user:', userId);
+    return res.status(200).send('✅ Supabase upserted successfully');
   }
 
   res.status(200).send('Webhook received');
