@@ -9,7 +9,10 @@ export const config = {
 };
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -30,7 +33,6 @@ export default async function handler(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-
     const userId = session.client_reference_id;
     const plan = session.metadata?.plan || 'unknown';
 
@@ -45,21 +47,27 @@ export default async function handler(req, res) {
       'basic': 100,
       'pro': 250,
     };
-
     const credits = creditsByPlan[plan] || 0;
 
-    // Upsert Supabase profile (create if missing, update if exists)
+    console.log("📦 Webhook received:", {
+      userId,
+      plan,
+      credits
+    });
+
+    // UPDATE existing profile only
     const { error } = await supabase
       .from('profiles')
-      .upsert({ id: userId, plan, credits }, { onConflict: 'id' });
+      .update({ plan, credits })
+      .eq('id', userId);
 
     if (error) {
-      console.error('❌ Supabase upsert failed:', error.message);
-      return res.status(500).send('Supabase upsert failed');
+      console.error('❌ Supabase update failed:', error.message);
+      return res.status(500).send('Supabase update failed');
     }
 
-    console.log('✅ Supabase upserted successfully for user:', userId);
-    return res.status(200).send('✅ Supabase upserted successfully');
+    console.log('✅ Supabase profile updated successfully for user:', userId);
+    return res.status(200).send('✅ Supabase profile updated');
   }
 
   res.status(200).send('Webhook received');

@@ -13,8 +13,14 @@ export default function PaymentSuccess() {
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
   const [waited, setWaited] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    // Guard: Only allow access if coming from Stripe checkout
+    if (!router.query.fromCheckout) {
+      router.replace("/dashboard");
+      return;
+    }
     let interval;
     let timeout;
     (async () => {
@@ -24,6 +30,9 @@ export default function PaymentSuccess() {
         setChecking(false);
         return;
       }
+      setChecking(true);
+      setError("");
+      setWaited(false);
       interval = setInterval(async () => {
         const { data: profile } = await supabase
           .from("profiles")
@@ -36,19 +45,19 @@ export default function PaymentSuccess() {
           router.replace("/dashboard");
         }
       }, 500);
-      // Fallback: after 10 seconds, show error
+      // Fallback: after 20 seconds, show error
       timeout = setTimeout(() => {
         clearInterval(interval);
         setWaited(true);
-        setError("Your payment was received, but your plan is not yet active. Please refresh or contact support if this persists.");
+        setError("Your payment was received and is being processed. Sometimes it can take up to 20 seconds for your plan to activate. Please wait a moment and try again. If this persists, <a href='mailto:support@autopic.co.uk' style='color:#2563eb;text-decoration:underline;'>contact support</a> and we'll help you immediately.");
         setChecking(false);
-      }, 10000);
+      }, 20000);
     })();
     return () => {
       clearInterval(interval);
       clearTimeout(timeout);
     };
-  }, [router]);
+  }, [router, retry]);
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", bgcolor: "#f7fafd" }}>
@@ -65,10 +74,12 @@ export default function PaymentSuccess() {
       )}
       {error && (
         <>
-          <Typography color="error.main" mb={2}>{error}</Typography>
+          <Typography color="error.main" mb={2}>
+            <span dangerouslySetInnerHTML={{ __html: error }} />
+          </Typography>
           {waited && (
-            <Button variant="contained" color="primary" onClick={() => router.reload()}>
-              Refresh
+            <Button variant="contained" color="primary" onClick={() => setRetry(r => r + 1)}>
+              Try Again
             </Button>
           )}
         </>
