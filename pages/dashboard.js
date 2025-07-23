@@ -27,31 +27,35 @@ export default function DashboardPage() {
   const [dealership, setDealership] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userPlan, setUserPlan] = useState("");
-  const { plan } = useRouter().query;
+  const [initError, setInitError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/signup?redirect=/dashboard");
-        return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          router.replace("/signup?redirect=/dashboard");
+          return;
+        }
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("plan, credits")
+          .eq("id", user.id)
+          .single();
+        if (!profile || !profile.plan) {
+          // If no plan, redirect to pricing
+          router.replace("/pricing");
+          return;
+        }
+        setUser(user);
+        setCredits(profile.credits ?? 0);
+        setUserPlan(profile.plan || "");
+        const d = localStorage.getItem("dealership");
+        setDealership(d || "");
+      } catch (e) {
+        setInitError("Failed to load user profile. Please try again later.");
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("plan, credits")
-        .eq("id", user.id)
-        .single();
-      if (!profile || !profile.plan) {
-        // Instead of redirecting to /pricing, send to /payment-success to wait for plan activation
-        router.replace("/payment-success");
-        return;
-      }
-      setUser(user);
-      setCredits(profile.credits ?? 0);
-      setUserPlan(profile.plan || "");
-      const d = localStorage.getItem("dealership");
-      setDealership(d || "");
     })();
   }, [router]);
 
@@ -190,7 +194,8 @@ export default function DashboardPage() {
     if (fileInput) fileInput.value = '';
   };
 
-  if (!user) return null;
+  if (initError) return <div>{initError}</div>;
+  if (!user) return <div>Loading...</div>;
 
   return (
     <Box sx={{ bgcolor: "#f7fafd", minHeight: "100vh", p: { xs: 2, md: 6 } }}>
