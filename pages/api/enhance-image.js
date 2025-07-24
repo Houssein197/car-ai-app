@@ -67,15 +67,15 @@ export default async function handler(req, res) {
       }
 
       // Check credits in Supabase
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("credits")
-        .eq("id", userId)
+      const { data: creditRow, error: creditError } = await supabase
+        .from("credits")
+        .select("balance")
+        .eq("user_id", userId)
         .single();
-      if (profileError || !profile) {
-        return res.status(403).json({ error: "User not found" });
+      if (creditError || !creditRow) {
+        return res.status(403).json({ error: "User not found or no credits record" });
       }
-      if ((profile.credits ?? 0) < 1) {
+      if ((creditRow.balance ?? 0) < 1) {
         return res.status(403).json({ error: "Not enough credits" });
       }
 
@@ -223,10 +223,16 @@ export default async function handler(req, res) {
       }
 
       // Atomically decrement credits ONLY after successful upload
-      const { error: updateError, data: updateData } = await supabase.rpc("decrement_credits", { user_id: userId, amount: 1 });
+      const { error: updateError, data: updateData } = await supabase
+        .from("credits")
+        .update({ 
+          balance: creditRow.balance - 1,
+          last_updated: new Date().toISOString()
+        })
+        .eq("user_id", userId)
+        .select();
       if (updateError) {
-        console.error("❌ Failed to decrement credits via RPC:", updateError);
-        console.error("❌ RPC error details:", JSON.stringify(updateError, null, 2));
+        console.error("❌ Failed to decrement credits:", updateError);
         // Optionally: delete the uploaded image if credit decrement fails
         await supabase.storage.from("car-images").remove([finalFileName]);
         return res.status(500).json({ error: updateError.message || "Failed to decrement credits. Image not delivered." });

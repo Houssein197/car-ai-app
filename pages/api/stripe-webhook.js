@@ -35,6 +35,8 @@ export default async function handler(req, res) {
     const session = event.data.object;
     const userId = session.client_reference_id;
     const plan = session.metadata?.plan || "unknown";
+    const stripeCustomerId = session.customer;
+    const stripeSubscriptionId = session.subscription;
 
     if (!userId) {
       console.error("❌ No userId (client_reference_id) in session.");
@@ -48,31 +50,54 @@ export default async function handler(req, res) {
     };
     const credits = creditsByPlan[plan] || 0;
 
-    console.log("📦 Webhook received:", { userId, plan, credits });
+    console.log("📦 Webhook received:", {
+      userId,
+      plan,
+      credits,
+      stripeCustomerId,
+      stripeSubscriptionId,
+    });
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ plan, credits })
-      .eq("id", userId);
+    // 1. Update or insert into subscriptions
+    const { error: subscriptionError } = await supabase
+      .from("subscriptions")
+      .upsert(
+        {
+          user_id: userId,
+          plan,
+          stripe_customer_id: stripeCustomerId,
+          stripe_subscription_id: stripeSubscriptionId,
+          status: "active",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
 
-    if (error) {
-      console.warn("🔁 Update failed, trying upsert...");
-      const upsertResult = await supabase
-        .from("profiles")
-        .upsert({ id: userId, plan, credits }, { onConflict: "id" });
-
-      if (upsertResult.error) {
-        console.error("❌ Upsert also failed:", upsertResult.error.message);
-        return res.status(500).send("Supabase update and upsert both failed");
-      } else {
-        console.log("✅ Supabase upserted profile as fallback");
-      }
-    } else {
-      console.log("✅ Supabase profile updated for user:", userId);
+    if (subscriptionError) {
+      console.error("❌ Failed to update subscriptions table:", subscriptionError.message);
+      return res.status(500).send("Subscription update failed");
     }
 
-    return res.status(200).send("✅ Profile updated");
+    // 2. Update or insert into credits
+    const { error: creditError } = await supabase
+      .from("credits")
+      .upsert(
+        {
+          user_id: userId,
+          balance: credits,
+          last_updated: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (creditError) {
+      console.error("❌ Failed to update credits table:", creditError.message);
+      return res.status(500).send("Credits update failed");
+    }
+
+    console.log("✅ Stripe webhook processed: subscriptions and credits updated");
+    return res.status(200).send("✅ Stripe data updated");
   }
 
-  res.status(200).send("Webhook received");
+  res.status(200).send("Webhook received (no action)");
 }

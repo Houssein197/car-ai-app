@@ -18,7 +18,7 @@ const supabase = createClient(
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
-  const [credits, setCredits] = useState(100);
+  const [credits, setCredits] = useState(0);
   const [files, setFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [results, setResults] = useState([]);
@@ -26,7 +26,6 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [dealership, setDealership] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userPlan, setUserPlan] = useState("");
   const [initError, setInitError] = useState("");
   const router = useRouter();
 
@@ -38,23 +37,22 @@ export default function DashboardPage() {
           router.replace("/signup?redirect=/dashboard");
           return;
         }
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("plan, credits")
-          .eq("id", user.id)
-          .single();
-        if (!profile || !profile.plan) {
-          // If no plan, redirect to pricing
-          router.replace("/pricing");
-          return;
-        }
         setUser(user);
-        setCredits(profile.credits ?? 0);
-        setUserPlan(profile.plan || "");
+        // Fetch credits from credits table
+        const { data: creditRow, error: creditError } = await supabase
+          .from("credits")
+          .select("balance")
+          .eq("user_id", user.id)
+          .single();
+        if (creditError || !creditRow) {
+          setCredits(0);
+        } else {
+          setCredits(creditRow.balance ?? 0);
+        }
         const d = localStorage.getItem("dealership");
         setDealership(d || "");
       } catch (e) {
-        setInitError("Failed to load user profile. Please try again later.");
+        setInitError("Failed to load user or credits. Please try again later.");
       }
     })();
   }, [router]);
@@ -132,13 +130,13 @@ export default function DashboardPage() {
             name: `Generated Image ${prev.length + 1}`
           }
         ]);
-        // Refetch credits from Supabase after generation
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("credits")
-          .eq("id", user.id)
+        // Refetch credits from credits table after generation
+        const { data: creditRow, error: creditError } = await supabase
+          .from("credits")
+          .select("balance")
+          .eq("user_id", user.id)
           .single();
-        setCredits(profile?.credits ?? 0);
+        setCredits(creditRow?.balance ?? 0);
       } else {
         throw new Error("No image URL returned from server.");
       }
@@ -203,11 +201,6 @@ export default function DashboardPage() {
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/pricing")}>Pricing</Button>
-          {userPlan && (
-            <Typography variant="body1" sx={{ ml: 2, fontWeight: 700, color: '#2563eb', border: '1px solid #2563eb', borderRadius: 2, px: 2, py: 0.5, bgcolor: '#e8f0fe' }}>
-              {userPlan.charAt(0).toUpperCase() + userPlan.slice(1)} Plan
-            </Typography>
-          )}
         </Box>
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <Typography variant="body1" color="text.secondary" sx={{ mr: 3 }}>

@@ -42,12 +42,13 @@ export default function Home() {
         return;
       }
       setUser(user);
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("credits")
-        .eq("id", user.id)
+      // Fetch credits from credits table
+      const { data: creditRow, error: creditError } = await supabase
+        .from("credits")
+        .select("balance")
+        .eq("user_id", user.id)
         .single();
-      setCredits(profile?.credits ?? 0);
+      setCredits(creditRow?.balance ?? 0);
     })();
     // eslint-disable-next-line
   }, []);
@@ -105,13 +106,13 @@ export default function Home() {
       const data = await res.json();
       if (data.imageUrl) {
         setImageUrl(data.imageUrl);
-        // Refetch credits after generation
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("credits")
-          .eq("id", user.id)
+        // Refetch credits from credits table after generation
+        const { data: creditRow, error: creditError } = await supabase
+          .from("credits")
+          .select("balance")
+          .eq("user_id", user.id)
           .single();
-        setCredits(profile?.credits ?? 0);
+        setCredits(creditRow?.balance ?? 0);
       } else {
         throw new Error("No image URL returned from server.");
       }

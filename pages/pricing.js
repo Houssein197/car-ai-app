@@ -41,7 +41,6 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [showPlans, setShowPlans] = useState(false);
   const router = useRouter();
-  const [userPlan, setUserPlan] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -51,14 +50,6 @@ export default function PricingPage() {
       if (!user) {
         router.replace("/signup?redirect=/pricing");
         return;
-      }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("plan")
-        .eq("id", user.id)
-        .single();
-      if (profile) {
-        setUserPlan(profile.plan || "");
       }
       setShowPlans(true);
     })();
@@ -125,8 +116,8 @@ export default function PricingPage() {
                 mx: "auto",
                 p: 5,
                 borderRadius: 4,
-                bgcolor: userPlan === plan.key ? "#e8f0fe" : "#fff",
-                border: userPlan === plan.key ? "2px solid #2563eb" : plan.highlight ? "2px solid #2563eb" : "1px solid #e5eaf2",
+                bgcolor: plan.highlight ? "#e8f0fe" : "#fff",
+                border: plan.highlight ? "2px solid #2563eb" : "1px solid #e5eaf2",
                 boxShadow: plan.highlight ? "0 4px 24px 0 #2563eb11" : "0 2px 12px 0 #2563eb08",
                 display: "flex",
                 flexDirection: "column",
@@ -134,9 +125,8 @@ export default function PricingPage() {
                 justifyContent: "space-between",
               }}
             >
-              <Typography variant="h5" fontWeight={700} color={userPlan === plan.key ? "#2563eb" : plan.highlight ? "#2563eb" : "#222"} mb={2}>
+              <Typography variant="h5" fontWeight={700} color={plan.highlight ? "#2563eb" : "#222"} mb={2}>
                 {plan.name}
-                {userPlan === plan.key && <span style={{ marginLeft: 8, fontSize: 14, color: '#2563eb' }}>(Current)</span>}
               </Typography>
               <Typography color="text.secondary" mb={3} textAlign="center">
                 {plan.desc}

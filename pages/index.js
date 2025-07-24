@@ -31,7 +31,7 @@ export default function Home() {
         <Toolbar>
           <DirectionsCarFilledIcon sx={{ fontSize: 32, color: '#2563eb', mr: 1 }} />
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 800, letterSpacing: 1, color: '#2563eb' }}>
-            autopic.ai
+            autopic.co.uk
           </Typography>
           <Button color="inherit" sx={{ mr: 2, color: '#fff', fontSize: '1.25rem' }} onClick={() => router.push("/pricing")}>Pricing</Button>
           {loggedIn ? (
@@ -63,13 +63,14 @@ export default function Home() {
                 router.push("/signup?redirect=/pricing");
                 return;
               }
-              // Fetch user profile
-              const { data: profile } = await supabase
-                .from("profiles")
-                .select("plan")
-                .eq("id", user.id)
+              // Check if user has an active subscription
+              const { data: subscription } = await supabase
+                .from("subscriptions")
+                .select("status")
+                .eq("user_id", user.id)
+                .eq("status", "active")
                 .single();
-              if (profile && profile.plan) {
+              if (subscription) {
                 router.push("/dashboard");
               } else {
                 router.push("/pricing");
@@ -163,13 +164,13 @@ export default function Home() {
             Loved by dealerships and car sellers
           </Typography>
           <Typography color="#222" fontWeight={500} fontSize={20}>
-            “autopic.ai helped us increase inquiries by 45% — it really makes listings pop!”
+            “autopic.co.uk helped us increase inquiries by 45% — it really makes listings pop!”
           </Typography>
         </Box>
         {/* Footer */}
         <Box textAlign="center" mt={10} color="#94a3b8" fontSize={16}>
           <Typography variant="body2">
-            © {new Date().getFullYear()} <Box component="span" color="#2563eb" fontWeight={700}>autopic.ai</Box> — All rights reserved.
+            © {new Date().getFullYear()} <Box component="span" color="#2563eb" fontWeight={700}>autopic.co.uk</Box> — All rights reserved.
           </Typography>
         </Box>
       </Container>

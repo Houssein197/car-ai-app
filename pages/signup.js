@@ -45,7 +45,7 @@ export default function AuthPage() {
         if (error) throw error;
         // Save dealership name to localStorage
         localStorage.setItem("dealership", dealership.trim());
-        // Create profile row if not exists
+        // Create profile row if not exists (basic user info only)
         if (data?.user?.id) {
           try {
             const { error: insertError } = await supabase
@@ -54,8 +54,6 @@ export default function AuthPage() {
                 {
                   id: data.user.id,
                   full_name: "",
-                  plan: "none",
-                  credits: 0,
                 },
               ], { upsert: false });
             if (insertError && !insertError.message.includes("duplicate")) {
