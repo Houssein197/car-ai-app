@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const successUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`;
+    const successUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success?fromCheckout=1`;
     const cancelUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/pricing`;
 
     console.log("🔗 Stripe Checkout URLs:", { successUrl, cancelUrl });
