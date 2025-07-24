@@ -76,7 +76,7 @@ export default function Login() {
           )}
         </Box>
         <Typography mt={3} textAlign="center" color="text.secondary" fontSize={15}>
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/signup" underline="hover" color="primary.main" fontWeight={600}>
             Sign up
           </Link>

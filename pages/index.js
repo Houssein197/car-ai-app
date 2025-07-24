@@ -12,14 +12,13 @@ import { createClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import Image from 'next/image';
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
 export default function Home() {
   const router = useRouter();
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
-
   const [loggedIn, setLoggedIn] = useState(false);
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setLoggedIn(!!user));
