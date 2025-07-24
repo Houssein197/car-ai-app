@@ -34,10 +34,27 @@ export default function DashboardPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          router.replace("/signup?redirect=/dashboard");
-          return;
+          // Check if user is coming from payment-success
+          const isFromPaymentSuccess = window.location.search.includes('fromCheckout=1') || 
+                                     document.referrer.includes('payment-success');
+          
+          if (isFromPaymentSuccess) {
+            // Give a moment for session to be established
+            await new Promise(r => setTimeout(r, 2000));
+            const { data: { user: retryUser } } = await supabase.auth.getUser();
+            if (!retryUser) {
+              router.replace("/signup?redirect=/dashboard");
+              return;
+            }
+            setUser(retryUser);
+          } else {
+            router.replace("/signup?redirect=/dashboard");
+            return;
+          }
+        } else {
+          setUser(user);
         }
-        setUser(user);
+        
         // Fetch credits from credits table
         const { data: creditRow, error: creditError } = await supabase
           .from("credits")
