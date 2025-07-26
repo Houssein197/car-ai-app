@@ -53,7 +53,7 @@ export default function Home() {
             Transform your car photos<br />into <Box component="span" color="#2563eb">premium showroom</Box> images
           </Typography>
           <Typography variant="h5" color="#222" mb={5}>
-            Instantly upgrade your listings and sell faster with <Box component="span" color="#2563eb">autopic.ai</Box>.
+            Instantly upgrade your listings and sell faster with <Box component="span" color="#2563eb">autopic.co.uk</Box>.
           </Typography>
           <Button
             onClick={async () => {
