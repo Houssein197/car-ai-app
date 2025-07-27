@@ -20,6 +20,7 @@ import { useRouter } from "next/router";
 import React from "react";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import Image from 'next/image';
 
 export default function Home() {
   const [file, setFile] = useState(null);
@@ -323,16 +324,14 @@ export default function Home() {
                     <Typography variant="h6" mb={1} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                       Original Image
                     </Typography>
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      style={{
-                        maxWidth: '100%',
-                        height: 'auto',
-                        borderRadius: 8,
-                        maxHeight: 300
-                      }}
-                    />
+                    <Box sx={{ position: 'relative', width: '100%', height: 300, borderRadius: 2, overflow: 'hidden' }}>
+                      <Image
+                        src={previewUrl}
+                        alt="Preview"
+                        fill
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </Box>
                   </Box>
                 )}
 
@@ -341,16 +340,14 @@ export default function Home() {
                     <Typography variant="h6" mb={1} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                       Enhanced Image
                     </Typography>
-                    <img
-                      src={imageUrl}
-                      alt="Enhanced"
-                      style={{
-                        maxWidth: '100%',
-                        height: 'auto',
-                        borderRadius: 8,
-                        maxHeight: 300
-                      }}
-                    />
+                    <Box sx={{ position: 'relative', width: '100%', height: 300, borderRadius: 2, overflow: 'hidden' }}>
+                      <Image
+                        src={imageUrl}
+                        alt="Enhanced"
+                        fill
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </Box>
                     
                     <CardActions sx={{ 
                       justifyContent: 'center', 

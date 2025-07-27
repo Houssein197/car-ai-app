@@ -185,7 +185,7 @@ export default function Home() {
           </Typography>
           
           {/* Desktop: Side by side */}
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent="center", alignItems="center", gap: 8 }}>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: "center", alignItems: "center", gap: 8 }}>
             <Box>
               <Typography variant="subtitle1" mb={1}>Before</Typography>
               <Box

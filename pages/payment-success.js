@@ -56,7 +56,7 @@ export default function PaymentSuccess() {
       setLoading(false);
       setError("We couldn't detect your session. This might happen if you were logged out during checkout.");
     }
-  }, [router, retryKey]);
+  }, [router]);
 
   useEffect(() => {
     if (!router.isReady) return;
