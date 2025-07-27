@@ -18,6 +18,8 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/router";
 import React from "react";
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 export default function Home() {
   const [file, setFile] = useState(null);
@@ -28,6 +30,9 @@ export default function Home() {
   const [credits, setCredits] = useState(null);
   const [user, setUser] = useState(null);
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -99,25 +104,16 @@ export default function Home() {
         method: "POST",
         body: formData,
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Server error: ${text}`);
-      }
       const data = await res.json();
-      if (data.imageUrl) {
-        setImageUrl(data.imageUrl);
-        // Refetch credits from credits table after generation
-        const { data: creditRow, error: creditError } = await supabase
-          .from("credits")
-          .select("balance")
-          .eq("user_id", user.id)
-          .single();
-        setCredits(creditRow?.balance ?? 0);
+      if (data.error) {
+        setError(data.error);
       } else {
-        throw new Error("No image URL returned from server.");
+        setImageUrl(data.url);
+        // Update credits
+        setCredits(prev => Math.max(0, prev - 1));
       }
-    } catch (error) {
-      setError(error.message || "Error processing image. Please try again.");
+    } catch (err) {
+      setError("Failed to process image. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -128,40 +124,35 @@ export default function Home() {
     try {
       const response = await fetch(imageUrl);
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `luxury_showroom_car_${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      setError("Failed to download image. Please try again.");
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'enhanced-car-image.png';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      setError("Failed to download image.");
     }
   };
 
   const handleShare = async () => {
     if (!imageUrl) return;
-    if (navigator.share) {
-      try {
+    try {
+      if (navigator.share) {
         await navigator.share({
-          title: "Check out my luxury showroom car image!",
-          text: "Look at this professional car photo I created with AI.",
+          title: 'Enhanced Car Image',
+          text: 'Check out this enhanced car image created with AutoPic!',
           url: imageUrl,
         });
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          setError("Failed to share image. Please try again.");
-        }
-      }
-    } else {
-      try {
+      } else {
         await navigator.clipboard.writeText(imageUrl);
-        alert("Image URL copied to clipboard!");
-      } catch (error) {
-        setError("Sharing is not supported on this device/browser.");
+        setError("Image URL copied to clipboard!");
+        setTimeout(() => setError(""), 3000);
       }
+    } catch (err) {
+      setError("Failed to share image.");
     }
   };
 
@@ -170,145 +161,231 @@ export default function Home() {
     setImageUrl("");
     setPreviewUrl("");
     setError("");
-    const fileInput = document.querySelector('input[type="file"]');
-    if (fileInput) fileInput.value = '';
+    if (file) {
+      URL.revokeObjectURL(previewUrl);
+    }
   };
 
   return (
-    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
-      <AppBar position="static" color="primary" elevation={2}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
-            Luxury Car Showroom AI
+    <Box sx={{ bgcolor: '#fff', minHeight: '100vh', pb: 8 }}>
+      <AppBar position="static" elevation={0} sx={{ bgcolor: '#fff', color: '#2563eb', boxShadow: 'none', borderBottom: '1px solid #e5eaf2' }}>
+        <Toolbar sx={{ 
+          minHeight: { xs: '56px', md: '64px' },
+          px: { xs: 1, md: 2 }
+        }}>
+          <Typography variant="h6" sx={{ 
+            flexGrow: 1, 
+            fontWeight: 800, 
+            letterSpacing: 1, 
+            color: '#2563eb',
+            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+          }}>
+            {isMobile ? 'autopic' : 'autopic.co.uk'}
           </Typography>
+          
+          {/* Desktop Navigation */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+            <Button color="inherit" sx={{ color: '#2563eb', fontSize: '1.25rem' }} onClick={() => router.push("/")}>
+              Home
+            </Button>
+            <Button color="inherit" sx={{ color: '#2563eb', fontSize: '1.25rem' }} onClick={() => router.push("/dashboard")}>
+              Dashboard
+            </Button>
+            <Button color="inherit" sx={{ color: '#2563eb', fontSize: '1.25rem' }} onClick={() => router.push("/pricing")}>
+              Pricing
+            </Button>
+            <Button color="inherit" sx={{ color: '#2563eb', fontSize: '1.25rem' }} onClick={async () => { await supabase.auth.signOut(); router.push("/signup"); }}>
+              Logout
+            </Button>
+          </Box>
+          
+          {/* Mobile Navigation */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, gap: 0.5 }}>
+            <Button 
+              size="small" 
+              color="inherit" 
+              sx={{ color: '#2563eb', fontSize: '0.75rem', px: 1 }} 
+              onClick={() => router.push("/dashboard")}
+            >
+              Dashboard
+            </Button>
+            <Button 
+              size="small" 
+              color="primary" 
+              variant="outlined" 
+              sx={{ color: '#2563eb', borderColor: '#2563eb', fontSize: '0.75rem', px: 1 }} 
+              onClick={() => router.push("/pricing")}
+            >
+              Pricing
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="md" sx={{ py: 6 }}>
-        <Box textAlign="center" mb={4}>
-          <Typography variant="h3" fontWeight={700} color="text.primary" gutterBottom>
-            🚗 Luxury Car Showroom AI
+
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 6 } }}>
+        <Box textAlign="center" mb={{ xs: 4, md: 6 }}>
+          <Typography variant="h3" fontWeight={800} color="#2563eb" gutterBottom sx={{ 
+            fontSize: { xs: '1.75rem', sm: '2.25rem', md: '3rem' },
+            lineHeight: { xs: 1.2, md: 1.1 }
+          }}>
+            Transform your car photos
           </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Upload your car photo and get a professional luxury showroom image with AI.
+          <Typography variant="h5" color="#222" mb={{ xs: 2, md: 3 }} sx={{
+            fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+            lineHeight: { xs: 1.4, md: 1.3 }
+          }}>
+            Upload and enhance your car images instantly
+          </Typography>
+          <Typography variant="body1" color="#666" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+            Credits remaining: {credits}
           </Typography>
         </Box>
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
-        )}
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} justifyContent="center" alignItems="flex-start">
-          {/* Upload Card */}
-          <Card sx={{ flex: '1 1 400px', maxWidth: 500, minHeight: 500, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2, boxShadow: 3 }}>
-            <CardContent>
-              <Typography variant="h5" color="text.primary" mb={2}>
-                Upload Car Photo
-              </Typography>
-              <Button
-                component="label"
-                variant="outlined"
-                startIcon={<UploadFileIcon />}
-                fullWidth
-                sx={{ mb: 2, py: 2 }}
-              >
-                Choose File
+
+        <Card elevation={2} sx={{ 
+          maxWidth: { xs: '100%', sm: 600 }, 
+          mx: 'auto', 
+          borderRadius: { xs: 2, md: 3 },
+          p: { xs: 2, md: 3 }
+        }}>
+          <CardContent sx={{ p: { xs: 1, md: 2 } }}>
+            <Stack spacing={{ xs: 2, md: 3 }}>
+              <Box>
                 <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="file-upload"
                   type="file"
-                  accept="image/jpeg,image/jpg,image/png"
-                  hidden
                   onChange={handleFileChange}
                 />
-              </Button>
+                <label htmlFor="file-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    fullWidth={isMobile}
+                    startIcon={<UploadFileIcon />}
+                    sx={{ 
+                      mb: { xs: 1, md: 0 },
+                      mr: { xs: 0, md: 2 },
+                      height: { xs: 48, md: 40 }
+                    }}
+                  >
+                    Choose Image
+                  </Button>
+                </label>
+                {!isMobile && (
+                  <Button
+                    variant="contained"
+                    onClick={handleGenerate}
+                    disabled={loading || !file}
+                    sx={{ height: 40 }}
+                  >
+                    {loading ? <CircularProgress size={20} /> : "Generate"}
+                  </Button>
+                )}
+              </Box>
+              
+              {isMobile && (
+                <Button
+                  variant="contained"
+                  onClick={handleGenerate}
+                  disabled={loading || !file}
+                  fullWidth
+                  sx={{ height: 48 }}
+                >
+                  {loading ? <CircularProgress size={20} /> : "Generate Enhanced Image"}
+                </Button>
+              )}
+
+              {error && (
+                <Alert severity="error" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                  {error}
+                </Alert>
+              )}
+
               {previewUrl && (
-                <Box mt={2}>
-                  <Typography variant="subtitle1" color="text.secondary" mb={1}>Preview:</Typography>
-                  <Box
-                    component="img"
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h6" mb={1} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                    Original Image
+                  </Typography>
+                  <img
                     src={previewUrl}
-                    alt="Uploaded preview"
-                    sx={{ width: '100%', borderRadius: 2, border: 1, borderColor: 'grey.200' }}
+                    alt="Preview"
+                    style={{
+                      maxWidth: '100%',
+                      height: 'auto',
+                      borderRadius: 8,
+                      maxHeight: 300
+                    }}
                   />
                 </Box>
               )}
-            </CardContent>
-            <CardActions sx={{ mt: 2, display: 'flex', gap: 1 }}>
-              <Button
-                onClick={handleGenerate}
-                disabled={loading || !file || credits === 0 || credits === null}
-                variant="contained"
-                color="primary"
-                fullWidth
-                size="large"
-                sx={{ fontWeight: 600 }}
-              >
-                {loading ? <><CircularProgress size={24} sx={{ mr: 1 }} /> Processing...</> : '✨ Create Luxury Showroom Image'}
-              </Button>
-              {(file || imageUrl) && (
-                <Button
-                  onClick={clearAll}
-                  color="error"
-                  variant="outlined"
-                  startIcon={<ClearIcon />}
-                  fullWidth
-                  size="large"
-                >
-                  Clear
-                </Button>
+
+              {imageUrl && (
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h6" mb={1} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                    Enhanced Image
+                  </Typography>
+                  <img
+                    src={imageUrl}
+                    alt="Enhanced"
+                    style={{
+                      maxWidth: '100%',
+                      height: 'auto',
+                      borderRadius: 8,
+                      maxHeight: 300
+                    }}
+                  />
+                  
+                  <CardActions sx={{ 
+                    justifyContent: 'center', 
+                    pt: { xs: 2, md: 3 },
+                    gap: { xs: 1, md: 2 }
+                  }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<DownloadIcon />}
+                      onClick={handleDownload}
+                      size={isMobile ? "large" : "medium"}
+                      fullWidth={isMobile}
+                      sx={{ 
+                        height: { xs: 48, md: 40 },
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }}
+                    >
+                      Download
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ShareIcon />}
+                      onClick={handleShare}
+                      size={isMobile ? "large" : "medium"}
+                      fullWidth={isMobile}
+                      sx={{ 
+                        height: { xs: 48, md: 40 },
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }}
+                    >
+                      Share
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ClearIcon />}
+                      onClick={clearAll}
+                      size={isMobile ? "large" : "medium"}
+                      fullWidth={isMobile}
+                      sx={{ 
+                        height: { xs: 48, md: 40 },
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  </CardActions>
+                </Box>
               )}
-            </CardActions>
-          </Card>
-          {/* Result Card */}
-          <Card sx={{ flex: '1 1 400px', maxWidth: 500, minHeight: 500, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', p: 2, boxShadow: 3, textAlign: 'center' }}>
-            {loading ? (
-              <Box textAlign="center">
-                <CircularProgress size={48} sx={{ mb: 2 }} />
-                <Typography variant="h6" color="text.primary" mb={1}>Creating Luxury Showroom Image</Typography>
-                <Typography color="text.secondary">Removing background and compositing with luxury showroom...</Typography>
-                <Typography color="text.disabled" fontSize={14} mt={2}>This may take 30-60 seconds</Typography>
-              </Box>
-            ) : imageUrl ? (
-              <>
-                <Box
-                  component="img"
-                  src={imageUrl}
-                  alt="Luxury showroom car image"
-                  sx={{ width: '100%', borderRadius: 2, mb: 2, border: 1, borderColor: 'grey.200' }}
-                />
-                <Stack direction="column" spacing={1} width="100%">
-                  <Button
-                    onClick={handleDownload}
-                    variant="contained"
-                    color="success"
-                    startIcon={<DownloadIcon />}
-                    fullWidth
-                    size="large"
-                  >
-                    Download Image
-                  </Button>
-                  <Button
-                    onClick={handleShare}
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<ShareIcon />}
-                    fullWidth
-                    size="large"
-                  >
-                    Share Image
-                  </Button>
-                </Stack>
-              </>
-            ) : (
-              <Box color="text.disabled">
-                <Typography fontSize={48} mb={1}>🏎️</Typography>
-                <Typography fontSize={18} fontWeight={500}>Your luxury showroom image will appear here</Typography>
-                <Typography fontSize={14} mt={1} color="text.secondary">
-                  Upload a car photo and click &quot;Create Luxury Showroom Image&quot;
-                </Typography>
-              </Box>
-            )}
-          </Card>
-        </Stack>
-        <Box textAlign="center" mt={6} color="text.secondary" fontSize={14}>
-          <Typography variant="body2">Powered by Abdulhakim Houssein</Typography>
-        </Box>
+            </Stack>
+          </CardContent>
+        </Card>
       </Container>
     </Box>
   );

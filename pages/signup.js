@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { createClient } from "@supabase/supabase-js";
 import {
-  Box, Button, TextField, Typography, Paper, Tabs, Tab, InputAdornment, IconButton
+  Box, Button, TextField, Typography, Paper, Tabs, Tab, InputAdornment, IconButton, AppBar, Toolbar, Container
 } from "@mui/material";
 import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
 import CloseIcon from "@mui/icons-material/Close";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -23,6 +26,8 @@ export default function AuthPage() {
   const [dealershipError, setDealershipError] = useState(false);
   const router = useRouter();
   const { plan, tab: tabParam } = router.query;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     if (tabParam === 'signup') setTab(1);
@@ -82,8 +87,36 @@ export default function AuthPage() {
     <Box sx={{
       minHeight: "100vh",
       display: "flex",
+      flexDirection: { xs: "column", md: "row" },
       bgcolor: "#f7fafd"
     }}>
+      {/* Mobile App Bar */}
+      <AppBar position="static" elevation={0} sx={{ 
+        bgcolor: '#fff', 
+        color: '#2563eb', 
+        boxShadow: 'none', 
+        borderBottom: '1px solid #e5eaf2',
+        display: { xs: 'block', md: 'none' }
+      }}>
+        <Toolbar sx={{ 
+          minHeight: '56px !important', 
+          px: { xs: 1, sm: 2 },
+          gap: 1
+        }}>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={() => router.push("/")}
+            sx={{ mr: 1 }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            {tab === 0 ? 'Login' : 'Sign Up'}
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
       {/* Left Panel (Form) */}
       <Box
         sx={{
@@ -92,26 +125,38 @@ export default function AuthPage() {
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          px: { xs: 2, md: 6 },
-          py: 8,
+          px: { xs: 2, sm: 3, md: 6 },
+          py: { xs: 3, md: 8 },
           bgcolor: "#fff",
           boxShadow: { md: "2px 0 24px 0 rgba(0,0,0,0.03)" },
+          minHeight: { xs: 'auto', md: '100vh' }
         }}
       >
-        <Paper elevation={0} sx={{ width: "100%", maxWidth: 380, p: { xs: 2, md: 4 }, borderRadius: 4, boxShadow: "0 2px 16px 0 rgba(37,99,235,0.04)" }}>
+        <Paper elevation={0} sx={{ 
+          width: "100%", 
+          maxWidth: { xs: '100%', sm: 400, md: 380 }, 
+          p: { xs: 3, sm: 4, md: 4 }, 
+          borderRadius: { xs: 2, md: 4 }, 
+          boxShadow: "0 2px 16px 0 rgba(37,99,235,0.04)" 
+        }}>
           <Tabs
             value={tab}
             onChange={(_, v) => setTab(v)}
             variant="fullWidth"
             sx={{
-              mb: 3,
+              mb: { xs: 2, md: 3 },
               ".MuiTabs-indicator": { bgcolor: "#2563eb" },
-              ".MuiTab-root": { fontWeight: 600, color: "#2563eb" }
+              ".MuiTab-root": { 
+                fontWeight: 600, 
+                color: "#2563eb",
+                fontSize: { xs: '0.875rem', sm: '1rem' }
+              }
             }}
           >
             <Tab label="Login" />
             <Tab label="Sign Up" />
           </Tabs>
+          
           <Box component="form" noValidate autoComplete="off" onSubmit={e => { e.preventDefault(); handleAuth(); }}>
             {tab === 1 && (
               <TextField
@@ -126,6 +171,7 @@ export default function AuthPage() {
                 sx={{
                   bgcolor: "#fafbfc",
                   borderRadius: 2,
+                  mb: { xs: 1, md: 2 },
                   "& .MuiOutlinedInput-root": {
                     "& fieldset": { borderColor: "#e5eaf2" },
                     "&:hover fieldset": { borderColor: "#2563eb" },
@@ -152,6 +198,7 @@ export default function AuthPage() {
               sx={{
                 bgcolor: "#fafbfc",
                 borderRadius: 2,
+                mb: { xs: 1, md: 2 },
                 "& .MuiOutlinedInput-root": {
                   "& fieldset": { borderColor: "#e5eaf2" },
                   "&:hover fieldset": { borderColor: "#2563eb" },
@@ -177,6 +224,7 @@ export default function AuthPage() {
               sx={{
                 bgcolor: "#fafbfc",
                 borderRadius: 2,
+                mb: { xs: 2, md: 3 },
                 "& .MuiOutlinedInput-root": {
                   "& fieldset": { borderColor: "#e5eaf2" },
                   "&:hover fieldset": { borderColor: "#2563eb" },
@@ -191,41 +239,79 @@ export default function AuthPage() {
               fullWidth
               size="large"
               sx={{
-                mt: 3,
+                mt: { xs: 1, md: 3 },
+                mb: { xs: 2, md: 3 },
                 fontWeight: 700,
                 borderRadius: 2,
                 bgcolor: "#2563eb",
                 boxShadow: "none",
+                height: { xs: 48, md: 56 },
+                fontSize: { xs: '0.875rem', sm: '1rem' },
                 "&:hover": { bgcolor: "#174bbd" }
               }}
             >
               {loading ? "Processing..." : tab === 1 ? "Create account" : "Log in"}
             </Button>
           </Box>
-          <Typography mt={3} textAlign="center" color="text.secondary" fontSize={15}>
+          
+          <Typography 
+            mt={{ xs: 2, md: 3 }} 
+            textAlign="center" 
+            color="text.secondary" 
+            sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
+          >
             {tab === 0 ? (
               <>
-                {"Don't have an account? "}
-                <Button variant="text" size="small" sx={{ color: "#2563eb", fontWeight: 600, minWidth: 0, p: 0 }} onClick={() => setTab(1)}>
+                {"Don&apos;t have an account? "}
+                <Button 
+                  variant="text" 
+                  size="small" 
+                  sx={{ 
+                    color: "#2563eb", 
+                    fontWeight: 600, 
+                    minWidth: 0, 
+                    p: 0,
+                    fontSize: { xs: '0.875rem', sm: '0.9375rem' }
+                  }} 
+                  onClick={() => setTab(1)}
+                >
                   Create one
                 </Button>
               </>
             ) : (
               <>
                 {"Already have an account? "}
-                <Button variant="text" size="small" sx={{ color: "#2563eb", fontWeight: 600, minWidth: 0, p: 0 }} onClick={() => setTab(0)}>
+                <Button 
+                  variant="text" 
+                  size="small" 
+                  sx={{ 
+                    color: "#2563eb", 
+                    fontWeight: 600, 
+                    minWidth: 0, 
+                    p: 0,
+                    fontSize: { xs: '0.875rem', sm: '0.9375rem' }
+                  }} 
+                  onClick={() => setTab(0)}
+                >
                   Log in
                 </Button>
               </>
             )}
           </Typography>
+          
           {message && (
-            <Typography mt={2} color={message.startsWith("✅") ? "success.main" : "error.main"} fontWeight={500}>
+            <Typography 
+              mt={2} 
+              color={message.startsWith("✅") ? "success.main" : "error.main"} 
+              fontWeight={500}
+              sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+            >
               {message}
             </Typography>
           )}
         </Paper>
       </Box>
+      
       {/* Right Panel (Image + Promo) */}
       <Box
         sx={{

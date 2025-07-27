@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { createClient } from "@supabase/supabase-js";
 import {
-  Box, Button, Typography, IconButton, Paper, Stack, CircularProgress, Grid, Tooltip
+  Box, Button, Typography, IconButton, Paper, Stack, CircularProgress, Grid, Tooltip,
+  AppBar, Toolbar, Drawer, List, ListItem, ListItemText, ListItemIcon
 } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -10,6 +11,9 @@ import ShareIcon from "@mui/icons-material/Share";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import CloseIcon from "@mui/icons-material/Close";
+import MenuIcon from "@mui/icons-material/Menu";
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -27,7 +31,10 @@ export default function DashboardPage() {
   const [dealership, setDealership] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [initError, setInitError] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     (async () => {
@@ -209,13 +216,102 @@ export default function DashboardPage() {
     if (fileInput) fileInput.value = '';
   };
 
-  if (initError) return <div>{initError}</div>;
-  if (!user) return <div>Loading...</div>;
+  if (initError) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        p: { xs: 2, md: 4 }
+      }}>
+        <Typography variant="h6" color="error" mb={2}>
+          {initError}
+        </Typography>
+        <Button variant="contained" onClick={() => window.location.reload()}>
+          Try Again
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ bgcolor: "#f7fafd", minHeight: "100vh", p: { xs: 2, md: 6 } }}>
-      {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
+    <Box sx={{ bgcolor: '#f8fafc', minHeight: '100vh' }}>
+      {/* Mobile App Bar */}
+      <AppBar position="static" elevation={0} sx={{ 
+        bgcolor: '#fff', 
+        color: '#2563eb', 
+        boxShadow: 'none', 
+        borderBottom: '1px solid #e5eaf2',
+        display: { xs: 'block', md: 'none' }
+      }}>
+        <Toolbar sx={{ minHeight: '56px !important', px: 1 }}>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={() => setMobileMenuOpen(true)}
+            sx={{ mr: 1 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            Dashboard
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#2563eb', fontWeight: 600 }}>
+            {credits} credits
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
+      {/* Mobile Navigation Drawer */}
+      <Drawer
+        anchor="left"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        sx={{ display: { xs: 'block', md: 'none' } }}
+      >
+        <Box sx={{ width: 250, p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              Menu
+            </Typography>
+            <IconButton onClick={() => setMobileMenuOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <List>
+            <ListItem button onClick={() => { router.push('/'); setMobileMenuOpen(false); }}>
+              <ListItemText primary="Home" />
+            </ListItem>
+            <ListItem button onClick={() => { router.push('/pricing'); setMobileMenuOpen(false); }}>
+              <ListItemText primary="Pricing" />
+            </ListItem>
+            <ListItem button onClick={() => { router.push('/dashboard'); setMobileMenuOpen(false); }}>
+              <ListItemText primary="Dashboard" />
+            </ListItem>
+            <ListItem button onClick={handleLogout}>
+              <ListItemText primary="Logout" />
+            </ListItem>
+          </List>
+        </Box>
+      </Drawer>
+
+      {/* Desktop Header */}
+      <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: "space-between", alignItems: "center", mb: 4, p: { xs: 2, md: 6 } }}>
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/pricing")}>Pricing</Button>
         </Box>

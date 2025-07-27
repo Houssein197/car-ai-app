@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import {
-  Box, Button, Typography, Paper, Stack, AppBar, Toolbar
+  Box, Button, Typography, Paper, Stack, AppBar, Toolbar, Container
 } from "@mui/material";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/router";
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -42,6 +44,8 @@ export default function PricingPage() {
   const [showPlans, setShowPlans] = useState(false);
   const router = useRouter();
   const [loggedIn, setLoggedIn] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     (async () => {
@@ -93,29 +97,124 @@ export default function PricingPage() {
 
   return (
     <>
-      <AppBar position="fixed" elevation={0} sx={{ bgcolor: '#fff', color: '#2563eb', boxShadow: 'none', borderBottom: '1px solid #e5eaf2', m: 0, p: 0 }}>
-        <Toolbar sx={{ minHeight: '56px !important', p: 0 }}>
-          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/")}>Home</Button>
-          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/dashboard")}>Dashboard</Button>
-          {!loggedIn && <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/signup")}>Login</Button>}
-          {!loggedIn && <Button color="primary" variant="outlined" onClick={() => router.push("/signup")}>Sign Up</Button>}
+      {/* Mobile App Bar */}
+      <AppBar position="fixed" elevation={0} sx={{ 
+        bgcolor: '#fff', 
+        color: '#2563eb', 
+        boxShadow: 'none', 
+        borderBottom: '1px solid #e5eaf2',
+        display: { xs: 'block', md: 'none' }
+      }}>
+        <Toolbar sx={{ 
+          minHeight: '56px !important', 
+          px: { xs: 1, sm: 2 },
+          gap: 1
+        }}>
+          <Button 
+            color="inherit" 
+            size="small"
+            sx={{ 
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              px: { xs: 1, sm: 2 },
+              minWidth: 'auto'
+            }} 
+            onClick={() => router.push("/")}
+          >
+            Home
+          </Button>
+          <Button 
+            color="inherit" 
+            size="small"
+            sx={{ 
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              px: { xs: 1, sm: 2 },
+              minWidth: 'auto'
+            }} 
+            onClick={() => router.push("/dashboard")}
+          >
+            Dashboard
+          </Button>
+          {!loggedIn && (
+            <Button 
+              color="primary" 
+              variant="outlined" 
+              size="small"
+              sx={{ 
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                px: { xs: 1, sm: 2 },
+                minWidth: 'auto',
+                ml: 'auto'
+              }} 
+              onClick={() => router.push("/signup")}
+            >
+              Sign Up
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
-      <Box sx={{ bgcolor: "#f7fafd", minHeight: "100vh", py: 0, mt: '56px' }}>
-        <Typography variant="h3" fontWeight={800} textAlign="center" mb={8} color="#2563eb" sx={{ mt: 14 }}>
+
+      {/* Desktop App Bar */}
+      <AppBar position="fixed" elevation={0} sx={{ 
+        bgcolor: '#fff', 
+        color: '#2563eb', 
+        boxShadow: 'none', 
+        borderBottom: '1px solid #e5eaf2',
+        display: { xs: 'none', md: 'block' }
+      }}>
+        <Toolbar sx={{ minHeight: '64px !important', px: 3 }}>
+          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/")}>
+            Home
+          </Button>
+          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/dashboard")}>
+            Dashboard
+          </Button>
+          {!loggedIn && <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/signup")}>
+            Login
+          </Button>}
+          {!loggedIn && <Button color="primary" variant="outlined" onClick={() => router.push("/signup")}>
+            Sign Up
+          </Button>}
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ 
+        bgcolor: "#f7fafd", 
+        minHeight: "100vh", 
+        py: { xs: 2, md: 4 },
+        mt: { xs: '56px', md: '64px' }
+      }}>
+        <Typography 
+          variant="h3" 
+          fontWeight={800} 
+          textAlign="center" 
+          mb={{ xs: 4, md: 8 }} 
+          color="#2563eb" 
+          sx={{ 
+            mt: { xs: 2, md: 4 },
+            fontSize: { xs: '1.75rem', sm: '2.25rem', md: '3rem' },
+            lineHeight: { xs: 1.2, md: 1.1 }
+          }}
+        >
           Choose your plan
         </Typography>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={4} justifyContent="center" alignItems="stretch" px={2}>
+        
+        <Stack 
+          direction={{ xs: "column", md: "row" }} 
+          spacing={{ xs: 3, md: 4 }} 
+          justifyContent="center" 
+          alignItems="stretch" 
+          sx={{ px: { xs: 1, sm: 2, md: 3 } }}
+        >
           {plans.map((plan) => (
             <Paper
               key={plan.key}
               elevation={plan.highlight ? 4 : 1}
               sx={{
                 flex: "1 1 250px",
-                maxWidth: 340,
+                maxWidth: { xs: '100%', sm: 400, md: 340 },
                 mx: "auto",
-                p: 5,
-                borderRadius: 4,
+                p: { xs: 3, sm: 4, md: 5 },
+                borderRadius: { xs: 2, md: 4 },
                 bgcolor: plan.highlight ? "#e8f0fe" : "#fff",
                 border: plan.highlight ? "2px solid #2563eb" : "1px solid #e5eaf2",
                 boxShadow: plan.highlight ? "0 4px 24px 0 #2563eb11" : "0 2px 12px 0 #2563eb08",
@@ -123,27 +222,56 @@ export default function PricingPage() {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "space-between",
+                minHeight: { xs: 'auto', md: 400 },
+                gap: { xs: 2, md: 3 }
               }}
             >
-              <Typography variant="h5" fontWeight={700} color={plan.highlight ? "#2563eb" : "#222"} mb={2}>
-                {plan.name}
-              </Typography>
-              <Typography color="text.secondary" mb={3} textAlign="center">
-                {plan.desc}
-              </Typography>
-              <Typography variant="h4" fontWeight={800} mb={3} color="#2563eb">
-                {plan.price}
-              </Typography>
+              <Box sx={{ textAlign: 'center', width: '100%' }}>
+                <Typography 
+                  variant="h5" 
+                  fontWeight={700} 
+                  color={plan.highlight ? "#2563eb" : "#222"} 
+                  mb={{ xs: 1, md: 2 }}
+                  sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+                >
+                  {plan.name}
+                </Typography>
+                <Typography 
+                  color="text.secondary" 
+                  mb={{ xs: 2, md: 3 }} 
+                  textAlign="center"
+                  sx={{ 
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    lineHeight: { xs: 1.4, md: 1.5 }
+                  }}
+                >
+                  {plan.desc}
+                </Typography>
+                <Typography 
+                  variant="h4" 
+                  fontWeight={800} 
+                  mb={{ xs: 2, md: 3 }} 
+                  color="#2563eb"
+                  sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
+                >
+                  {plan.price}
+                </Typography>
+              </Box>
+              
               <Button
                 onClick={() => handleCheckout(plan)}
                 variant={plan.highlight ? "contained" : "outlined"}
                 color="primary"
                 size="large"
                 disabled={loadingPlan === plan.priceId}
+                fullWidth={isMobile}
                 sx={{
                   fontWeight: 700,
                   borderRadius: 2,
-                  px: 4,
+                  px: { xs: 3, md: 4 },
+                  py: { xs: 1.5, md: 2 },
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  height: { xs: 48, md: 56 },
                   boxShadow: plan.highlight ? "0 2px 12px 0 #2563eb22" : "none",
                   bgcolor: plan.highlight ? "#2563eb" : undefined,
                   color: plan.highlight ? "#fff" : "#2563eb",
@@ -159,7 +287,7 @@ export default function PricingPage() {
             </Paper>
           ))}
         </Stack>
-      </Box>
+      </Container>
     </>
   );
 }
