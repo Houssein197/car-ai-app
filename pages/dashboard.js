@@ -465,7 +465,7 @@ export default function DashboardPage() {
         </Paper>
       </Stack>
       <Box textAlign="center" mt={6} color="text.secondary" fontSize={14}>
-        <Typography variant="body2">Powered by AutoPic.co.uk</Typography>
+        <Typography variant="body2">Powered by AutoPic.co.uk  | Contact us at autopic.co.uk@hotmail.com</Typography>
       </Box>
     </Box>
   );
