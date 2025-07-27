@@ -97,15 +97,25 @@ export default function Home() {
                 Dashboard
               </Button>
             ) : (
-              <Button 
-                size="small" 
-                color="primary" 
-                variant="outlined" 
-                sx={{ color: '#2563eb', borderColor: '#2563eb', fontSize: '0.75rem', px: 1 }} 
-                onClick={() => router.push("/signup")}
-              >
-                Sign Up
-              </Button>
+              <>
+                <Button 
+                  size="small" 
+                  color="inherit" 
+                  sx={{ color: '#2563eb', fontSize: '0.75rem', px: 1 }} 
+                  onClick={() => router.push("/signup?tab=login")}
+                >
+                  Login
+                </Button>
+                <Button 
+                  size="small" 
+                  color="primary" 
+                  variant="outlined" 
+                  sx={{ color: '#2563eb', borderColor: '#2563eb', fontSize: '0.75rem', px: 1 }} 
+                  onClick={() => router.push("/signup?tab=signup")}
+                >
+                  Sign Up
+                </Button>
+              </>
             )}
           </Box>
         </Toolbar>
@@ -173,18 +183,19 @@ export default function Home() {
           }}>
             See the Difference
           </Typography>
-          <Box display="flex" justifyContent="center" alignItems="center" gap={{ xs: 2, md: 8 }} flexWrap="wrap">
-            <Box sx={{ width: { xs: '100%', sm: '45%', md: 'auto' } }}>
+          
+          {/* Desktop: Side by side */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent="center", alignItems="center", gap: 8 }}>
+            <Box>
               <Typography variant="subtitle1" mb={1}>Before</Typography>
               <Box
                 sx={{
-                  width: { xs: '100%', sm: '100%', md: 600 },
-                  height: { xs: 200, sm: 250, md: 375 },
+                  width: 600,
+                  height: 375,
                   position: 'relative',
                   borderRadius: 2,
                   overflow: 'hidden',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  mb: { xs: 2, md: 0 }
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
               >
                 <Image
@@ -196,12 +207,58 @@ export default function Home() {
                 />
               </Box>
             </Box>
-            <Box sx={{ width: { xs: '100%', sm: '45%', md: 'auto' } }}>
+            <Box>
               <Typography variant="subtitle1" mb={1}>After</Typography>
               <Box
                 sx={{
-                  width: { xs: '100%', sm: '100%', md: 600 },
-                  height: { xs: 200, sm: 250, md: 375 },
+                  width: 600,
+                  height: 375,
+                  position: 'relative',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}
+              >
+                <Image
+                  src="/after.png"
+                  alt="After - Enhanced showroom image"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  priority
+                />
+              </Box>
+            </Box>
+          </Box>
+          
+          {/* Mobile: Stacked vertically */}
+          <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" mb={1}>Before</Typography>
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 200,
+                  position: 'relative',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}
+              >
+                <Image
+                  src="/before.png"
+                  alt="Before - Original car photo"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  priority
+                />
+              </Box>
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" mb={1}>After</Typography>
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 200,
                   position: 'relative',
                   borderRadius: 2,
                   overflow: 'hidden',

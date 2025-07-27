@@ -241,11 +241,13 @@ export default function Home() {
           </Typography>
         </Box>
 
+        {/* Upload Section - Fixed height for mobile */}
         <Card elevation={2} sx={{ 
           maxWidth: { xs: '100%', sm: 600 }, 
           mx: 'auto', 
           borderRadius: { xs: 2, md: 3 },
-          p: { xs: 2, md: 3 }
+          p: { xs: 2, md: 3 },
+          minHeight: { xs: 'auto', md: 'auto' }
         }}>
           <CardContent sx={{ p: { xs: 1, md: 2 } }}>
             <Stack spacing={{ xs: 2, md: 3 }}>
@@ -301,91 +303,106 @@ export default function Home() {
                   {error}
                 </Alert>
               )}
-
-              {previewUrl && (
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6" mb={1} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                    Original Image
-                  </Typography>
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    style={{
-                      maxWidth: '100%',
-                      height: 'auto',
-                      borderRadius: 8,
-                      maxHeight: 300
-                    }}
-                  />
-                </Box>
-              )}
-
-              {imageUrl && (
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6" mb={1} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                    Enhanced Image
-                  </Typography>
-                  <img
-                    src={imageUrl}
-                    alt="Enhanced"
-                    style={{
-                      maxWidth: '100%',
-                      height: 'auto',
-                      borderRadius: 8,
-                      maxHeight: 300
-                    }}
-                  />
-                  
-                  <CardActions sx={{ 
-                    justifyContent: 'center', 
-                    pt: { xs: 2, md: 3 },
-                    gap: { xs: 1, md: 2 }
-                  }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<DownloadIcon />}
-                      onClick={handleDownload}
-                      size={isMobile ? "large" : "medium"}
-                      fullWidth={isMobile}
-                      sx={{ 
-                        height: { xs: 48, md: 40 },
-                        fontSize: { xs: '0.875rem', sm: '1rem' }
-                      }}
-                    >
-                      Download
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ShareIcon />}
-                      onClick={handleShare}
-                      size={isMobile ? "large" : "medium"}
-                      fullWidth={isMobile}
-                      sx={{ 
-                        height: { xs: 48, md: 40 },
-                        fontSize: { xs: '0.875rem', sm: '1rem' }
-                      }}
-                    >
-                      Share
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ClearIcon />}
-                      onClick={clearAll}
-                      size={isMobile ? "large" : "medium"}
-                      fullWidth={isMobile}
-                      sx={{ 
-                        height: { xs: 48, md: 40 },
-                        fontSize: { xs: '0.875rem', sm: '1rem' }
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </CardActions>
-                </Box>
-              )}
             </Stack>
           </CardContent>
         </Card>
+
+        {/* Image Display Section - Separate from upload */}
+        {(previewUrl || imageUrl) && (
+          <Card elevation={2} sx={{ 
+            maxWidth: { xs: '100%', sm: 600 }, 
+            mx: 'auto', 
+            mt: { xs: 2, md: 3 },
+            borderRadius: { xs: 2, md: 3 },
+            p: { xs: 2, md: 3 }
+          }}>
+            <CardContent sx={{ p: { xs: 1, md: 2 } }}>
+              <Stack spacing={{ xs: 2, md: 3 }}>
+                {previewUrl && (
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" mb={1} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                      Original Image
+                    </Typography>
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      style={{
+                        maxWidth: '100%',
+                        height: 'auto',
+                        borderRadius: 8,
+                        maxHeight: 300
+                      }}
+                    />
+                  </Box>
+                )}
+
+                {imageUrl && (
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" mb={1} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                      Enhanced Image
+                    </Typography>
+                    <img
+                      src={imageUrl}
+                      alt="Enhanced"
+                      style={{
+                        maxWidth: '100%',
+                        height: 'auto',
+                        borderRadius: 8,
+                        maxHeight: 300
+                      }}
+                    />
+                    
+                    <CardActions sx={{ 
+                      justifyContent: 'center', 
+                      pt: { xs: 2, md: 3 },
+                      gap: { xs: 1, md: 2 }
+                    }}>
+                      <Button
+                        variant="outlined"
+                        startIcon={<DownloadIcon />}
+                        onClick={handleDownload}
+                        size={isMobile ? "large" : "medium"}
+                        fullWidth={isMobile}
+                        sx={{ 
+                          height: { xs: 48, md: 40 },
+                          fontSize: { xs: '0.875rem', sm: '1rem' }
+                        }}
+                      >
+                        Download
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<ShareIcon />}
+                        onClick={handleShare}
+                        size={isMobile ? "large" : "medium"}
+                        fullWidth={isMobile}
+                        sx={{ 
+                          height: { xs: 48, md: 40 },
+                          fontSize: { xs: '0.875rem', sm: '1rem' }
+                        }}
+                      >
+                        Share
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<ClearIcon />}
+                        onClick={clearAll}
+                        size={isMobile ? "large" : "medium"}
+                        fullWidth={isMobile}
+                        sx={{ 
+                          height: { xs: 48, md: 40 },
+                          fontSize: { xs: '0.875rem', sm: '1rem' }
+                        }}
+                      >
+                        Clear
+                      </Button>
+                    </CardActions>
+                  </Box>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
       </Container>
     </Box>
   );
