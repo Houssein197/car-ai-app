@@ -53,24 +53,24 @@ export default function Home() {
           
           {/* Desktop Navigation */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-            <Button color="inherit" sx={{ color: '#2563eb', fontSize: '1.25rem' }} onClick={() => router.push("/pricing")}>
+            <Button color="inherit" sx={{ color: '#f5f6fa', fontSize: '1.25rem' }} onClick={() => router.push("/pricing")}>
               Pricing
             </Button>
             {loggedIn ? (
               <>
-                <Button color="inherit" sx={{ color: '#2563eb', fontSize: '1.25rem' }} onClick={() => router.push("/dashboard")}>
+                <Button color="inherit" sx={{ color: '#f5f6fa', fontSize: '1.25rem' }} onClick={() => router.push("/dashboard")}>
                   Dashboard
                 </Button>
-                <Button color="inherit" sx={{ color: '#2563eb', fontSize: '1.25rem' }} onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); router.push("/signup"); }}>
+                <Button color="inherit" sx={{ color: '#f5f6fa', fontSize: '1.25rem' }} onClick={async () => { await supabase.auth.signOut(); setLoggedIn(false); router.push("/signup"); }}>
                   Logout
                 </Button>
               </>
             ) : (
               <>
-                <Button color="inherit" sx={{ color: '#2563eb', fontSize: '1.25rem' }} onClick={() => router.push("/signup?tab=login")}>
+                <Button color="inherit" sx={{ color: '#f5f6fa', fontSize: '1.25rem' }} onClick={() => router.push("/signup?tab=login")}>
                   Login
                 </Button>
-                <Button color="primary" variant="outlined" sx={{ color: '#2563eb', borderColor: '#2563eb', fontSize: '1.25rem' }} onClick={() => router.push("/signup?tab=signup")}>
+                <Button color="primary" variant="outlined" sx={{ color: '#f5f6fa', borderColor: '#2563eb', fontSize: '1.25rem' }} onClick={() => router.push("/signup?tab=signup")}>
                   Sign Up
                 </Button>
               </>
