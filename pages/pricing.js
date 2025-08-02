@@ -99,23 +99,24 @@ export default function PricingPage() {
     <>
       {/* Mobile App Bar */}
       <AppBar position="fixed" elevation={0} sx={{ 
-        bgcolor: '#fff', 
-        color: '#2563eb', 
+        bgcolor: '#1e40af', 
+        color: '#fff', 
         boxShadow: 'none', 
         borderBottom: '1px solid #e5eaf2',
         display: { xs: 'block', md: 'none' }
       }}>
         <Toolbar sx={{ 
-          minHeight: '56px !important', 
-          px: { xs: 1, sm: 2 },
-          gap: 1
+          minHeight: '64px !important', 
+          px: { xs: 2, sm: 3 },
+          gap: 2
         }}>
           <Button 
             color="inherit" 
-            size="small"
+            size="large"
             sx={{ 
-              fontSize: { xs: '0.75rem', sm: '0.875rem' },
-              px: { xs: 1, sm: 2 },
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              px: 3,
               minWidth: 'auto'
             }} 
             onClick={() => router.push("/")}
@@ -124,10 +125,11 @@ export default function PricingPage() {
           </Button>
           <Button 
             color="inherit" 
-            size="small"
+            size="large"
             sx={{ 
-              fontSize: { xs: '0.75rem', sm: '0.875rem' },
-              px: { xs: 1, sm: 2 },
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              px: 3,
               minWidth: 'auto'
             }} 
             onClick={() => router.push("/dashboard")}
@@ -136,14 +138,17 @@ export default function PricingPage() {
           </Button>
           {!loggedIn && (
             <Button 
-              color="primary" 
+              color="inherit" 
               variant="outlined" 
-              size="small"
+              size="large"
               sx={{ 
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                px: { xs: 1, sm: 2 },
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                px: 3,
                 minWidth: 'auto',
-                ml: 'auto'
+                ml: 'auto',
+                borderColor: '#fff',
+                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' }
               }} 
               onClick={() => router.push("/signup")}
             >
@@ -155,139 +160,199 @@ export default function PricingPage() {
 
       {/* Desktop App Bar */}
       <AppBar position="fixed" elevation={0} sx={{ 
-        bgcolor: '#fff', 
-        color: '#2563eb', 
+        bgcolor: '#1e40af', 
+        color: '#fff', 
         boxShadow: 'none', 
         borderBottom: '1px solid #e5eaf2',
         display: { xs: 'none', md: 'block' }
       }}>
-        <Toolbar sx={{ minHeight: '64px !important', px: 3 }}>
-          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/")}>
+        <Toolbar sx={{ minHeight: '80px !important', px: 4 }}>
+          <Button 
+            color="inherit" 
+            sx={{ 
+              mr: 4, 
+              fontSize: '1.25rem',
+              fontWeight: 600,
+              px: 3,
+              py: 1.5
+            }} 
+            onClick={() => router.push("/")}
+          >
             Home
           </Button>
-          <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/dashboard")}>
+          <Button 
+            color="inherit" 
+            sx={{ 
+              mr: 4, 
+              fontSize: '1.25rem',
+              fontWeight: 600,
+              px: 3,
+              py: 1.5
+            }} 
+            onClick={() => router.push("/dashboard")}
+          >
             Dashboard
           </Button>
-          {!loggedIn && <Button color="inherit" sx={{ mr: 2 }} onClick={() => router.push("/signup")}>
-            Login
-          </Button>}
-          {!loggedIn && <Button color="primary" variant="outlined" onClick={() => router.push("/signup")}>
-            Sign Up
-          </Button>}
+          {!loggedIn && (
+            <Button 
+              color="inherit" 
+              sx={{ 
+                mr: 3, 
+                fontSize: '1.25rem',
+                fontWeight: 600,
+                px: 3,
+                py: 1.5
+              }} 
+              onClick={() => router.push("/signup")}
+            >
+              Login
+            </Button>
+          )}
+          {!loggedIn && (
+            <Button 
+              color="inherit" 
+              variant="outlined" 
+              sx={{ 
+                fontSize: '1.25rem',
+                fontWeight: 600,
+                px: 4,
+                py: 1.5,
+                borderColor: '#fff',
+                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.1)' }
+              }} 
+              onClick={() => router.push("/signup")}
+            >
+              Sign Up
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ 
-        bgcolor: "#f7fafd", 
-        minHeight: "100vh", 
-        py: { xs: 2, md: 4 },
-        mt: { xs: '56px', md: '64px' }
+      <Box sx={{ 
+        bgcolor: "#f8fafc", 
+        minHeight: "100vh",
+        pt: { xs: '80px', md: '100px' },
+        pb: { xs: 4, md: 8 }
       }}>
-        <Typography 
-          variant="h3" 
-          fontWeight={800} 
-          textAlign="center" 
-          mb={{ xs: 4, md: 8 }} 
-          color="#2563eb" 
-          sx={{ 
-            mt: { xs: 2, md: 4 },
-            fontSize: { xs: '1.75rem', sm: '2.25rem', md: '3rem' },
-            lineHeight: { xs: 1.2, md: 1.1 }
-          }}
-        >
-          Choose your plan
-        </Typography>
-        
-        <Stack 
-          direction={{ xs: "column", md: "row" }} 
-          spacing={{ xs: 3, md: 4 }} 
-          justifyContent="center" 
-          alignItems="stretch" 
-          sx={{ px: { xs: 1, sm: 2, md: 3 } }}
-        >
-          {plans.map((plan) => (
-            <Paper
-              key={plan.key}
-              elevation={plan.highlight ? 4 : 1}
-              sx={{
-                flex: "1 1 250px",
-                maxWidth: { xs: '100%', sm: 400, md: 340 },
-                mx: "auto",
-                p: { xs: 3, sm: 4, md: 5 },
-                borderRadius: { xs: 2, md: 4 },
-                bgcolor: plan.highlight ? "#e8f0fe" : "#fff",
-                border: plan.highlight ? "2px solid #2563eb" : "1px solid #e5eaf2",
-                boxShadow: plan.highlight ? "0 4px 24px 0 #2563eb11" : "0 2px 12px 0 #2563eb08",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "space-between",
-                minHeight: { xs: 'auto', md: 400 },
-                gap: { xs: 2, md: 3 }
-              }}
-            >
-              <Box sx={{ textAlign: 'center', width: '100%' }}>
-                <Typography 
-                  variant="h5" 
-                  fontWeight={700} 
-                  color={plan.highlight ? "#2563eb" : "#222"} 
-                  mb={{ xs: 1, md: 2 }}
-                  sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
-                >
-                  {plan.name}
-                </Typography>
-                <Typography 
-                  color="text.secondary" 
-                  mb={{ xs: 2, md: 3 }} 
-                  textAlign="center"
-                  sx={{ 
-                    fontSize: { xs: '0.875rem', sm: '1rem' },
-                    lineHeight: { xs: 1.4, md: 1.5 }
-                  }}
-                >
-                  {plan.desc}
-                </Typography>
-                <Typography 
-                  variant="h4" 
-                  fontWeight={800} 
-                  mb={{ xs: 2, md: 3 }} 
-                  color="#2563eb"
-                  sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
-                >
-                  {plan.price}
-                </Typography>
-              </Box>
-              
-              <Button
-                onClick={() => handleCheckout(plan)}
-                variant={plan.highlight ? "contained" : "outlined"}
-                color="primary"
-                size="large"
-                disabled={loadingPlan === plan.priceId}
-                fullWidth={isMobile}
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4, lg: 6 } }}>
+          <Typography 
+            variant="h2" 
+            fontWeight={800} 
+            textAlign="center" 
+            mb={{ xs: 6, md: 10 }} 
+            color="#1e40af" 
+            sx={{ 
+              fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4rem', lg: '4.5rem' },
+              lineHeight: { xs: 1.1, md: 1.05 }
+            }}
+          >
+            Choose your plan
+          </Typography>
+          
+          <Stack 
+            direction={{ xs: "column", md: "row" }} 
+            spacing={{ xs: 4, md: 6 }} 
+            justifyContent="center" 
+            alignItems="stretch" 
+            sx={{ 
+              maxWidth: '1400px',
+              mx: 'auto'
+            }}
+          >
+            {plans.map((plan) => (
+              <Paper
+                key={plan.key}
+                elevation={plan.highlight ? 8 : 2}
                 sx={{
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  px: { xs: 3, md: 4 },
-                  py: { xs: 1.5, md: 2 },
-                  fontSize: { xs: '0.875rem', sm: '1rem' },
-                  height: { xs: 48, md: 56 },
-                  boxShadow: plan.highlight ? "0 2px 12px 0 #2563eb22" : "none",
-                  bgcolor: plan.highlight ? "#2563eb" : undefined,
-                  color: plan.highlight ? "#fff" : "#2563eb",
-                  borderColor: "#2563eb",
+                  flex: "1 1 350px",
+                  maxWidth: { xs: '100%', sm: 500, md: 400 },
+                  mx: "auto",
+                  p: { xs: 4, sm: 5, md: 6 },
+                  borderRadius: { xs: 3, md: 5 },
+                  bgcolor: plan.highlight ? "#e8f0fe" : "#fff",
+                  border: plan.highlight ? "3px solid #1e40af" : "1px solid #e5eaf2",
+                  boxShadow: plan.highlight ? "0 8px 32px 0 #1e40af22" : "0 4px 20px 0 #1e40af0a",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  minHeight: { xs: 'auto', md: 500 },
+                  gap: { xs: 3, md: 4 },
+                  transform: plan.highlight ? 'scale(1.02)' : 'scale(1)',
+                  transition: 'all 0.3s ease',
                   '&:hover': {
-                    bgcolor: plan.highlight ? "#174bbd" : "#f0f6ff",
-                    borderColor: "#174bbd"
+                    transform: plan.highlight ? 'scale(1.03)' : 'scale(1.01)',
+                    boxShadow: plan.highlight ? "0 12px 40px 0 #1e40af33" : "0 8px 28px 0 #1e40af15"
                   }
                 }}
               >
-                {loadingPlan === plan.priceId ? "Redirecting..." : "Choose Plan"}
-              </Button>
-            </Paper>
-          ))}
-        </Stack>
-      </Container>
+                <Box sx={{ textAlign: 'center', width: '100%' }}>
+                  <Typography 
+                    variant="h4" 
+                    fontWeight={700} 
+                    color={plan.highlight ? "#1e40af" : "#222"} 
+                    mb={{ xs: 2, md: 3 }}
+                    sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' } }}
+                  >
+                    {plan.name}
+                  </Typography>
+                  <Typography 
+                    color="text.secondary" 
+                    mb={{ xs: 3, md: 4 }} 
+                    textAlign="center"
+                    sx={{ 
+                      fontSize: { xs: '1rem', sm: '1.125rem' },
+                      lineHeight: { xs: 1.5, md: 1.6 }
+                    }}
+                  >
+                    {plan.desc}
+                  </Typography>
+                  <Typography 
+                    variant="h3" 
+                    fontWeight={800} 
+                    mb={{ xs: 3, md: 4 }} 
+                    color="#1e40af"
+                    sx={{ fontSize: { xs: '2.25rem', sm: '2.75rem', md: '3rem' } }}
+                  >
+                    {plan.price}
+                  </Typography>
+                </Box>
+                
+                <Button
+                  onClick={() => handleCheckout(plan)}
+                  variant={plan.highlight ? "contained" : "outlined"}
+                  color="primary"
+                  size="large"
+                  disabled={loadingPlan === plan.priceId}
+                  fullWidth
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: 3,
+                    px: { xs: 4, md: 6 },
+                    py: { xs: 2, md: 2.5 },
+                    fontSize: { xs: '1rem', sm: '1.125rem' },
+                    height: { xs: 56, md: 64 },
+                    boxShadow: plan.highlight ? "0 4px 16px 0 #1e40af33" : "none",
+                    bgcolor: plan.highlight ? "#1e40af" : undefined,
+                    color: plan.highlight ? "#fff" : "#1e40af",
+                    borderColor: "#1e40af",
+                    borderWidth: "2px",
+                    '&:hover': {
+                      bgcolor: plan.highlight ? "#1e3a8a" : "#f0f6ff",
+                      borderColor: "#1e3a8a",
+                      transform: 'translateY(-2px)',
+                      boxShadow: plan.highlight ? "0 6px 20px 0 #1e40af44" : "0 4px 12px 0 #1e40af22"
+                    },
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {loadingPlan === plan.priceId ? "Redirecting..." : "Choose Plan"}
+                </Button>
+              </Paper>
+            ))}
+          </Stack>
+        </Container>
+      </Box>
     </>
   );
 }

@@ -24,7 +24,7 @@ export default function PaymentSuccess() {
     setError("");
     setAttempts(0);
     let currentAttempts = 0;
-    const maxAttempts = 40; // 20 seconds
+    const maxAttempts = 60; // 30 seconds (increased from 20)
     const interval = 500;
     let found = false;
     
@@ -54,7 +54,7 @@ export default function PaymentSuccess() {
     
     if (!found) {
       setLoading(false);
-      setError("We couldn't detect your session. This might happen if you were logged out during checkout.");
+      setError("We couldn't detect your session. Please try logging in manually.");
     }
   }, [router]);
 

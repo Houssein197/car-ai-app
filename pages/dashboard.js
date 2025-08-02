@@ -62,20 +62,40 @@ export default function DashboardPage() {
           setUser(user);
         }
         
+        // Ensure we have a valid user before proceeding
+        const currentUser = user || (await supabase.auth.getUser()).data.user;
+        if (!currentUser) {
+          setInitError("No user found. Please log in again.");
+          return;
+        }
+        
         // Fetch credits from credits table
         const { data: creditRow, error: creditError } = await supabase
           .from("credits")
           .select("balance")
-          .eq("user_id", user.id)
+          .eq("user_id", currentUser.id)
           .single();
         if (creditError || !creditRow) {
           setCredits(0);
         } else {
           setCredits(creditRow.balance ?? 0);
         }
-        const d = localStorage.getItem("dealership");
-        setDealership(d || "");
+        
+        // Fetch user profile to get dealership name from database
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("dealership, full_name")
+          .eq("id", currentUser.id)
+          .single();
+        
+        if (profileError) {
+          console.log("Profile fetch error (this is normal for existing users):", profileError.message);
+          setDealership("");
+        } else {
+          setDealership(profileData?.dealership || "");
+        }
       } catch (e) {
+        console.error("Dashboard initialization error:", e);
         setInitError("Failed to load user or credits. Please try again later.");
       }
     })();
@@ -91,6 +111,8 @@ export default function DashboardPage() {
   }, [results]);
 
   const handleLogout = async () => {
+    // Clear any localStorage data to prevent user data mixing
+    localStorage.clear();
     await supabase.auth.signOut();
     router.push("/signup");
   };

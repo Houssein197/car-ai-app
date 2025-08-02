@@ -48,9 +48,8 @@ export default function AuthPage() {
       if (tab === 1) {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        // Save dealership name to localStorage
-        localStorage.setItem("dealership", dealership.trim());
-        // Create profile row if not exists (basic user info only)
+        
+        // Create profile row with dealership name in database
         if (data?.user?.id) {
           try {
             const { error: insertError } = await supabase
@@ -59,13 +58,16 @@ export default function AuthPage() {
                 {
                   id: data.user.id,
                   full_name: "",
+                  dealership: dealership.trim(),
                 },
-              ], { upsert: false });
-            if (insertError && !insertError.message.includes("duplicate")) {
+              ], { upsert: true }); // Changed to upsert to handle existing profiles
+            if (insertError) {
               console.error("Failed to create profile:", insertError.message);
+              // Don't fail the signup if profile creation fails
             }
           } catch (profileErr) {
             console.error("Profile creation error:", profileErr);
+            // Don't fail the signup if profile creation fails
           }
         }
         setMessage("✅ Account created! Redirecting...");
