@@ -300,7 +300,7 @@ export default function Home() {
                 Your showroom image will appear here
               </Typography>
               <Typography fontSize={14} color="text.secondary">
-                Upload a car photo and click "Generate Image"
+                Upload a car photo and click &quot;Generate Image&quot;
               </Typography>
             </Box>
           </Paper>
