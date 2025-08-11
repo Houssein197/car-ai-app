@@ -52,6 +52,7 @@ export default function AuthPage() {
         // Create profile row with dealership name in database
         if (data?.user?.id) {
           try {
+            // Create profile
             const { error: insertError } = await supabase
               .from("profiles")
               .insert([
@@ -65,13 +66,28 @@ export default function AuthPage() {
               console.error("Failed to create profile:", insertError.message);
               // Don't fail the signup if profile creation fails
             }
+            
+            // Give user 1 free credit
+            const { error: creditError } = await supabase
+              .from("credits")
+              .insert([
+                {
+                  user_id: data.user.id,
+                  balance: 1,
+                  last_updated: new Date().toISOString(),
+                },
+              ], { upsert: true });
+            if (creditError) {
+              console.error("Failed to create credits:", creditError.message);
+              // Don't fail the signup if credit creation fails
+            }
           } catch (profileErr) {
             console.error("Profile creation error:", profileErr);
             // Don't fail the signup if profile creation fails
           }
         }
-        setMessage("✅ Account created! Redirecting...");
-        setTimeout(() => router.push("/pricing"), 1000);
+        setMessage("✅ Account created! Redirecting to dashboard...");
+        setTimeout(() => router.push("/dashboard"), 1000);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
